@@ -146,27 +146,21 @@ button>img {
 #songProgress {
     height: 0.8vh;
     border-radius: 5vh;
+    border: none;
+    background-color: var(--e-black); /* fallback for Firefox "empty" area */
 }
 
 #songProgress::-webkit-progress-bar {
     background-color: var(--e-black);
-    border-radius: 5vh;
 }
-
-#songProgress::-moz-progress-bar {
-    background-color: var(--e-black);
-    border-radius: 5vh;
-}
-
 
 #songProgress::-webkit-progress-value {
     background-color: var(--cl-blue);
     border-radius: 5vh;
 }
 
-#songProgress::-moz-progress-value {
+#songProgress::-moz-progress-bar {
     background-color: var(--cl-blue);
-    border-radius: 5vh;
 }
 
 /* option styles */

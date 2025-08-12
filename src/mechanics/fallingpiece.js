@@ -1,5 +1,5 @@
 import { Game } from "../main.js";
-import kicks from "../data/kicks.json" with { type: "json" };
+import { KICKS as kicks } from "../data/kicks.js";
 
 export class Falling {
     piece = null;

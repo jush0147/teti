@@ -1,4 +1,4 @@
-import sfxobj from "../data/sfxlist.json" with { type: "json" };
+import { SFXLIST as sfxobj } from "../data/sfxlist.js";
 import { songsobj } from "../data/data.js";
 import { Game } from "../main.js";
 

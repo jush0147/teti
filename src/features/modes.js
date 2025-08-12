@@ -1,5 +1,5 @@
 import { Game } from "../main.js";
-import gamemodeJSON from "../data/gamemodes.json" with { type: "json" };
+import { GAMEMODES as gamemodeJSON } from "../data/gamemodes.js";
 import { gameoverResultText, gameoverText, resultSuffix, statDecimals } from "../data/data.js";
 import { reverseLookup } from "../display/renderer.js";
 

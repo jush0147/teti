@@ -1,7 +1,8 @@
-{
+export const DEFAULT_SETTINGS = {
     "display": {
         "background": "#080B0C",
         "boardOpacity": 100,
+        "highRes": true,
         "showGrid": true,
         "gridopacity": 30,
         "gridType":"round",

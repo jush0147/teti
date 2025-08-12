@@ -1,7 +1,7 @@
 import { Game } from "../main.js";
 import { statDecimals, statsSecondary as statsSecondaries } from "../data/data.js";
 import { getPiece } from "../mechanics/randomisers.js";
-import kicks from "../data/kicks.json" with { type: "json" };
+import { KICKS as kicks } from "../data/kicks.js";
 
 export class Renderer {
     holdQueueGrid = [];

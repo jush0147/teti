@@ -1,4 +1,4 @@
-{
+export const GAMEMODES = {
     "*": {
         "settings": {
             "gravitySpeed": 950,

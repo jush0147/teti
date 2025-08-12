@@ -5,10 +5,9 @@ Hosted on github pages [here](https://titanplayz100.github.io/teti/)
 The info page can be found [here](https://titanplayz100.github.io/teti/info.html)
 
 > [!NOTE]
-> If you have issues use f5 to reset cache
+> If you have issues a common way to fix it is to use f5 to reset cache
 
-> [!WARNING]
-> Firefox is not supported (due to import assertions)
+FIREFOX is compatible!!!!
 
 ## Desktop App
 Releases are now run through a workflow. They are **up to date** and contain all the latest features.

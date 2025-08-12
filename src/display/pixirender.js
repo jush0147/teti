@@ -1,5 +1,5 @@
-import blocksprites from '../data/blocksprites.json' with { type: 'json' };
-import kicks from '../data/kicks.json' with { type: 'json' };
+import { BLOCK_SPRITES as blocksprites } from '../data/blocksprites.js';
+import { KICKS as kicks } from '../data/kicks.js';
 import { defaultSkins } from '../data/data.js';
 import { Game } from '../main.js';
 import { clearSplash } from '../main.js';
@@ -34,7 +34,8 @@ export class PixiRender {
 
     async init() {
         this.app = new PIXI.Application();
-        await this.app.init({ backgroundAlpha: 0, resizeTo: window, autoDensity: true, resolution: 1 });
+        const res = Game.settings.display.highRes ? 2 : 1;
+        await this.app.init({ backgroundAlpha: 0, resizeTo: window, autoDensity: true, resolution: res });
         document.body.prepend(this.app.canvas);
 
         const labels = [
@@ -83,8 +84,9 @@ export class PixiRender {
         const iconframe = (texture, scale, y) => {
             const icon = new PIXI.Sprite(texture)
             icon.scale.set(scale * width * 0.004)
-            icon.x = width * 1.525
-            icon.y = y
+            icon.x = (width * 1.525) + icon.width*1/2
+            icon.y = y + icon.height*1/2
+            icon.anchor.set(0.5)
             icon.interactive = true
             icon.cursor = 'pointer'
             icon.alpha = 0.6

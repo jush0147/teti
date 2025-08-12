@@ -90,6 +90,12 @@ Zenith mode additions
 ***
 
 ## Updates
+#### v1.4.6
+- changed all json files to js files
+- firefox is now compatible
+- fixed icons resizing weirdly
+- fixed text sizing slightly
+
 #### v1.4.5.2
 - Updated spin counting to go from 0 to 3 just like tetrio
 - Updated kick tables to be exacly from tetrio

@@ -1,5 +1,5 @@
 import { cleartypes, scoringTable } from "../data/data.js";
-import attackValues from "../data/attacktable.json" with { type: "json" };
+import { ATTACK_TABLES as attackValues } from "../data/attacktable.js";
 import { Game } from "../main.js";
 
 export class ClearLines {

@@ -1,4 +1,4 @@
-[
+export const SFXLIST = [
     {
         "name": "allclear.mp3",
         "path": "assets/sfx/allclear.mp3"

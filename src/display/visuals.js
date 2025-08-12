@@ -133,7 +133,8 @@ export class Visuals {
         const text = new PIXI.Text({ text: msg, style });
         text.resolution = 2;
         text.alpha = alpha;
-        text.style.fontSize *= window.innerHeight * 0.0014 / 1.25
+        text.style.fontSize *= Number(Game.settings.display.boardHeight) / 100;
+        text.style.fontSize += 4 * (100 / Number(Game.settings.display.boardHeight) - 1);
         text.position.set(this.textPosConsts.width * pos.x + pos.dx,
             this.textPosConsts.height * pos.y + pos.dy);
         text.anchor.set(pos.anchorX, pos.anchorY);

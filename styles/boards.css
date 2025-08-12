@@ -15,6 +15,7 @@
     width: 100%;
     height: 0.8vh;
     border-radius: 0.5vh;
+    border: none;
 }
 
 #lockCounter {
@@ -22,12 +23,14 @@
     height: 0.6vh;
 }
 
-:is(#lockTimer, #lockCounter, #garbageQueue)::-webkit-progress-bar {
+:is(#lockTimer, #lockCounter, #garbageQueue) {
     background-color: var(--invis);
+    
 }
 
-:is(#lockTimer, #lockCounter, #garbageQueue)::-moz-progress-bar {
+:is(#lockTimer, #lockCounter, #garbageQueue)::-webkit-progress-bar {
     background-color: var(--invis);
+    
 }
 
 :is(#lockTimer, #lockCounter)::-webkit-progress-value {
@@ -35,9 +38,13 @@
     border-radius: 0.7vh;
 }
 
-:is(#lockTimer, #lockCounter)::-moz-progress-value {
+:is(#lockTimer, #lockCounter)::-moz-progress-bar {
     background-color: var(--cl-blue);
     border-radius: 0.7vh;
+}
+
+#garbageQueue::-moz-progress-bar {
+    background-color: var(--invis);
 }
 
 #climbSpeedBar {
@@ -45,12 +52,14 @@
     --bar-colour: red;
     --background-colour: #00000000;
     position: absolute;
-    width: 32vh;
+    width: 100%;
     height: 1vh;
     border-radius: 0.5vh;
-    transform-origin: 0 0;
-    left: -2%;
     bottom: -5%;
+
+    border: none;
+    background-color: var(--background-colour); /* background for unfilled part (Firefox) */
+    overflow: hidden; /* clip the progress fill inside rounded corners */
 }
 
 #climbSpeedBar::-webkit-progress-value {
@@ -61,6 +70,11 @@
 #climbSpeedBar::-webkit-progress-bar {
     background-color: var(--background-colour);
     border-radius: 0.7vh;
+}
+
+#climbSpeedBar::-moz-progress-bar {
+    background-color: var(--bar-colour);
+    border-radius: 0.7vh; /* note: Firefox rounds corners only on the filled part */
 }
 
 #garbageQueue {

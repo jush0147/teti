@@ -1,7 +1,7 @@
 import { defaultSkins } from "../data/data.js";
 import { Game } from "../main.js";
 import { randomisers } from "../mechanics/randomisers.js";
-import kicks from "../data/kicks.json" with { type: "json" };
+import { KICKS as kicks } from "../data/kicks.js";
 
 export class GenerateMenus {
     gamemodeStart = document.getElementById("startGamemodeList");

@@ -1,4 +1,4 @@
-{
+export const BLOCK_SPRITES = {
     "frames": {
         "z": { "frame": { "x": 0, "y": 0, "w": 30, "h": 30 } },
         "l": { "frame": { "x": 31, "y": 0, "w": 30, "h": 30 } },

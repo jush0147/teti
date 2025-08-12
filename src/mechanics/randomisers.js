@@ -1,5 +1,5 @@
 import { Game } from "../main.js";
-import pieces from "../data/pieces.json" with { type: "json" };
+import { PIECES as pieces } from "../data/pieces.js";
 
 const pieceNames = ["z", "l", "o", "s", "i", "j", "t"]; // THIS ORDER IS VERY IMPORTANT
 
