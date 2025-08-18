@@ -74,6 +74,7 @@ Things that might be in progress
 
 - gravity increase over time (and maybe fix softdrop)
 - pro mode (large line count on board)
+- gamemode sub-modes (20l, 100l, etc)
 
 Zenith mode additions
 - add fatigue:
@@ -84,12 +85,26 @@ Zenith mode additions
     - 12:00 - 5 more permanent garbage (10 total)
 
 - option for expert mode style
+- mods
 
 [Longterm ideas here](#feature-wishlist)
 
 ***
 
 ## Updates
+#### v1.4.7
+- You can seek in replays!
+- can use url to load and save boardstates
+- refactored all timers to use PIXI game loop
+- refactored all things relating to ticks to use deltaTime
+- lookahead now hides the rotation center correctly
+
+##### Bugs found for now
+- race has bug with softdrop causing crash
+- url cant be used for custom skins (cors, will probably remove that functionality)
+- survival doesnt end game when at top of board
+- sound is entirely screwed up on firefox
+
 #### v1.4.6
 - changed all json files to js files
 - firefox is now compatible
@@ -357,8 +372,7 @@ Possible directions for game, kinda ordered by ease and desire
     - show info when hovering over settings
     - WIKI for technical docs about project
     - glossary of useful terms
-- replay functionality (either save gamestate or save keystrokes idk yet)
-    - statistics graph
+- statistics graph
 - more unique gamemodes (techmino styled)
     - misdrop remover mode
     - holdless and next queueless gamemode kinda like qp2 cards

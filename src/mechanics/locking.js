@@ -1,16 +1,21 @@
 import { Game } from "../main.js";
+import { TetiTimeout } from "../movement/tetitimers.js";
 
 export class LockPiece {
     divLockTimer = document.getElementById("lockTimer");
     divLockCounter = document.getElementById("lockCounter");
     lockCount;
-    timings = { lockdelay: 0, lockingTimer: 0, clearDelay: 0 }
+    /**@type {?TetiTimeout} */
+    lockdelay = null
+    /**@type {?TetiTimeout} */
+    clearDelay = null
+    isLocking = false;
 
     startTime = 0;
     remaining = 0;
 
     incrementLock() {
-        if (this.timings.lockdelay != 0) {
+        if (this.lockdelay != null) {
             this.lockCount++;
             Game.mechanics.locking.clearLockDelay(false);
             if (Game.settings.game.maxLockMovements != 0 && Game.settings.display.lockBar) {
@@ -38,27 +43,32 @@ export class LockPiece {
     }
 
     lockDelayStart(delay) {
-        clearTimeout(this.timings.lockdelay);
-        clearInterval(this.timings.lockingTimer);
+        if (this.lockdelay != null) this.lockdelay.stopAuto();
+        this.isLocking = false;
+
         this.startTime = Date.now();
-        this.timings.lockdelay = setTimeout(
+        this.lockdelay = new TetiTimeout(
             () => Game.mechanics.locking.lockPiece(),
             delay);
-        this.timings.lockingTimer = setInterval(() => {
-            const amountToAdd = 1000 / Game.settings.game.lockDelay;
-            if (Game.settings.display.lockBar) this.divLockTimer.value += amountToAdd;
-        }, 10);
+        if (!Game.replay.seeking) this.lockdelay.startAuto();
+        this.isLocking = true;
+    }
+
+    tickLockTimer(dt) {
+        if (!this.isLocking || !Game.settings.display.lockBar) return;
+        const dx = dt * 100 / Game.settings.game.lockDelay;
+        this.divLockTimer.value += dx;
     }
 
     lockingPause() {
-        if (this.timings.lockdelay == 0) return;
+        if (this.lockdelay == null) return;
         this.remaining = Game.settings.game.lockDelay - (Date.now() - this.startTime);
-        clearTimeout(this.timings.lockdelay);
-        clearInterval(this.timings.lockingTimer);
+        this.lockdelay.stopAuto();
+        this.isLocking = false;
     }
 
     lockingResume() {
-        if (this.timings.lockdelay == 0) return;
+        if (this.lockdelay == null) return;
         this.lockDelayStart(this.remaining);
     }
 
@@ -74,7 +84,7 @@ export class LockPiece {
         Game.pixi.flash(lockCoords);
 
         Game.mechanics.locking.clearLockDelay();
-        clearInterval(Game.gravityTimer);
+        if (Game.gravityTimer) Game.gravityTimer.stopAuto()
         const cleared = Game.mechanics.clear.clearLines(lockCoords);
         Game.endGame( // check stopped overlap next
             Game.mechanics.checkDeath(
@@ -96,7 +106,6 @@ export class LockPiece {
         Game.falling.moved = false;
         if (Game.stats.tgm_level % 100 != 99 && Game.stats.tgm_level != Game.settings.game.raceTarget - 1) Game.stats.tgm_level++;
 
-
         const xvals = [...new Set(lockCoords.map(([x, y]) => x))];
         const yval = Math.min(...lockCoords.map(([x, y]) => y));
         Game.particles.spawnParticles(Math.min(...xvals), yval, "lock", xvals.length);
@@ -106,25 +115,28 @@ export class LockPiece {
         const onClear = () => {
             Game.mechanics.spawnPiece(Game.bag.cycleNext());
             Game.history.save();
-            this.timings.clearDelay = 0;
+            this.clearDelay = null;
         }
+
         if (delay == 0) onClear();
-        else this.timings.clearDelay = setTimeout(() => onClear(), delay);
+        else {
+            this.clearDelay = new TetiTimeout(() => onClear(), delay)
+            if (!Game.replay.seeking) this.clearDelay.startAuto();
+        }
     }
 
     clearLockDelay(clearCount = true) {
-        clearInterval(this.timings.lockingTimer);
-        this.stopTimeout("lockdelay");
+        this.isLocking = false;
+        if (this.lockdelay != null) {
+            this.lockdelay.stopAuto()
+            this.lockdelay = null;
+        }
+
         this.divLockTimer.value = 0;
         if (!clearCount) return;
         this.divLockCounter.value = 0;
         this.lockCount = 0;
         if (Game.settings.game.preserveARR) return;
         Game.controls.resetMovements();
-    }
-
-    stopTimeout(name) {
-        clearTimeout(this.timings[name]);
-        this.timings[name] = 0;
     }
 }

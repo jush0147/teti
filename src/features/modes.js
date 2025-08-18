@@ -90,6 +90,14 @@ export class Modes {
         } else {
             this.loadHandling();
         }
+
+        if (mode == 'lookahead') {
+            Game.pixi.rotationCenter.visible = false
+            Game.pixi.bagSeperator.visible = false
+        } else {
+            Game.pixi.rotationCenter.visible = Game.settings.display.showIndicators
+            Game.pixi.bagSeperator.visible = Game.settings.display.showIndicators
+        }
     }
 
     saveHandling() {

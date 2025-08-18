@@ -3,11 +3,13 @@ import { Game } from "../main.js";
 export class Replay {
     events = {};
     currentFrame = 0;
-    /**@type { "idle" | "running" | "replaying" } */
+    /**@type { "idle" | "running" | "replaying" | "paused" } */
     state = "idle";
+    seeking = false;
+    fps = null;
 
     start() {
-        if (this.state == "replaying") return;
+        if (this.state == "replaying" | this.state == "paused") return;
         this.state = "running";
         this.currentFrame = 0;
         this.events = {};
@@ -20,9 +22,9 @@ export class Replay {
 
     togglePause() {
         if (this.state == "replaying") {
-            this.state = "idle"
+            this.state = "paused"
             Game.stopGameTimers();
-        } else if (this.state == "idle") {
+        } else if (this.state == "paused") {
             this.state = "replaying";
             Game.movement.startTimers();
         }
@@ -36,6 +38,7 @@ export class Replay {
             this.currentFrame++;
             const event = this.events[this.currentFrame];
             if (event != undefined) this.replayKey(event);
+            this.updateSeekPos(this.currentFrame);
         }
     }
 
@@ -78,10 +81,11 @@ export class Replay {
     runReplay(replayString) {
         const replay = JSON.parse(replayString);
         const oldEvents = replay.events;
-        const fps = replay.header.fps;
+        this.fps = replay.header.fps;
+        this.events = {}
 
         Object.getOwnPropertyNames(oldEvents).map(key => {
-            const frame = this.toFrame(key, fps);
+            const frame = this.toFrame(key, this.fps);
             if (this.events[frame] != undefined) {
                 this.joinEvent(frame, oldEvents[key]);
             } else {
@@ -93,6 +97,7 @@ export class Replay {
         this.state = "replaying";
         Game.settings.handling = replay.handling;
         Game.settings.game = replay.settings;
+        Game.pixi.seekBar.visible = true;
 
         Game.startGame(replay.header.seed);
     }
@@ -113,6 +118,74 @@ export class Replay {
         Game.controls.keyUpQueue = keyup;
 
         if (!Game.started && keydown.length > 0) Game.movement.startTimers();
+    }
+
+    updateSeekPos(frame) {
+        const frames = Object.keys(this.events)
+        const max = frames[frames.length - 1];
+        const percent = frame/max;
+        Game.pixi.setSeekPos(percent);
+    }
+
+    seekToPercent(percent) {
+        const frames = Object.keys(this.events)
+        const max = frames[frames.length - 1];
+        const frame = Math.round(max * percent)
+        this.seekToFrame(frame);
+        Game.pixi.setSeekPos(percent);
+    }
+
+    seekToFrame(frame) {
+        this.seeking = true;
+        let curtime = performance.now();
+
+        // start from beginning if going backwards
+        if (frame < this.currentFrame) {
+            const seed = Game.bag.genseed
+            Game.startGame(seed);
+            Game.movement.startTimers();
+            this.currentFrame = 0;
+        }
+
+        this.state = "paused"
+        Game.stopGameTimers();
+
+        while (this.currentFrame < frame) {
+            const event = this.events[this.currentFrame];
+            if (event) {
+                const keydown = event.keydown ?? [];
+                const keyup = event.keyup ?? [];
+                Game.controls.keyDownQueue = keydown;
+                Game.controls.keyUpQueue = keyup;
+                Game.controls.runKeyQueue(curtime);
+            }
+
+            const dt = this.toMillisecond(1, this.fps)
+
+            Game.controls.timer(curtime);
+            Game.stats.updateStats(dt);
+            Game.mechanics.locking.tickLockTimer(dt);
+
+            if (Game.controls.timings.arr) {
+                Game.controls.timings.arr.tick(dt);
+            }
+            if (Game.controls.timings.sd) {
+                Game.controls.timings.sd.tick(dt);
+            }
+            if (Game.gravityTimer) {
+                Game.gravityTimer.tick(dt);
+            }
+            if (Game.mechanics.locking.lockdelay) {
+                Game.mechanics.locking.lockdelay.tick(dt);
+            }
+            if (Game.mechanics.locking.clearDelay) {
+                Game.mechanics.locking.clearDelay.tick(dt);
+            }
+            this.currentFrame++;
+            curtime += dt;
+        }
+
+        this.seeking = false;
     }
 
     toMillisecond(frame, fps) {

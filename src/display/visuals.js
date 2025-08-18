@@ -4,19 +4,13 @@ import { PixiRender } from "./pixirender.js";
 export class Visuals {
     textSprites = {};
 
-    newContainer(label, parent) {
-        const container = new PIXI.Container();
-        parent.addChild(container);
-        container.label = label;
-
-        return container;
-    }
-
     generateContainers(labels) {
         /**@type {Record<string, PIXI.Container>} */
         const containers = {};
         labels.forEach(label => {
-            const container = this.newContainer(label, Game.pixi.app.stage);
+            const container = new PIXI.Container();
+            Game.pixi.app.stage.addChild(container);
+            container.label = label;
             containers[label] = container;
         });
         return containers;
@@ -82,34 +76,69 @@ export class Visuals {
         this.baseContainer("rotationCenterC", { dx: 0, dy: 0, pivotdx: 0, pivotdy: height }, consts, rotationCenter);
         this.baseContainer("bagSeperatorC", { dx: 0, dy: height * 1 / 20, pivotdx: width * -11 / 10, pivotdy: 0 }, consts, bagSeperator);
         this.baseContainer("garbageBar", { dx: 0, dy: 0, pivotdx: width * 1 / 40, pivotdy: 0 }, consts);
+        this.baseContainer("seekBar", { dx: 0, dy: 0, pivotdx: 0, pivotdy: 0 }, consts);
+
+        this.seekBarGraphics(consts);
     }
 
-    /** @param {PixiRender} pixi */
-    createGridGraphics(consts, icons, pixi) {
+    seekBarGraphics(consts) {
+        const width = consts.bw;
+        const height = consts.bh;
+        const bar = new PIXI.Graphics().roundRect(0, 0, 6, height / 20, 10).fill("white");
+        bar.x = -width / 2
+        bar.y = height * (5 / 4 - 1 / 28)
+
+        const barBG = new PIXI.Graphics()
+            .moveTo(-width / 2, height * (5 / 4 - 1 / 40)).lineTo(-width / 2, height * 5 / 4)
+            .moveTo(-width / 2, height * (5 / 4 - 1 / 80)).lineTo(width * 3 / 2, height * (5 / 4 - 1 / 80))
+            .moveTo(width * 3 / 2, height * (5 / 4 - 1 / 40)).lineTo(width * 3 / 2, height * 5 / 4)
+            .stroke({ color: 0xffffff, width: 2 })
+
+        const clickArea = new PIXI.Graphics().rect(0, 0, width * 2, height * 1 / 20).fill("transparent")
+        clickArea.x = -width / 2
+        clickArea.y = height * (5 / 4 - 1 / 28)
+        clickArea.interactive = true;
+        clickArea.cursor = 'pointer'
+        clickArea.on("pointerdown", (e) => {
+            const lower = (container.x - width)
+            const upper = container.width;
+            const percent = (e.x - lower) / upper            
+            Game.replay.seekToPercent(percent);
+        });
+
+        const container = Game.pixi.app.stage.getChildByLabel("seekBar");
+        container.addChild(bar);
+        container.addChild(barBG);
+        container.addChild(clickArea);
+
+        container.visible = false;
+    }
+
+    createGridGraphics(consts, icons) {
         const width = consts.bw;
         const height = consts.bh;
 
         /**@type {PIXI.Container} */
-        const grid = pixi.app.stage.getChildByLabel("grid");
+        const grid = Game.pixi.app.stage.getChildByLabel("grid");
 
-        pixi.boardBG = new PIXI.Graphics()
+        Game.pixi.boardBG = new PIXI.Graphics()
             .rect(0, 0, width, height)
             .rect(-width * 2 / 5, 0, width * 2 / 5, height * 1 / 4)
             .rect(width, 0, width * 1 / 2, height * 17 / 20)
             .fill("black")
-        pixi.boardBG.alpha = Number(Game.settings.display.boardOpacity) / 100;
-        grid.addChild(pixi.boardBG);
+        Game.pixi.boardBG.alpha = Number(Game.settings.display.boardOpacity) / 100;
+        grid.addChild(Game.pixi.boardBG);
 
-        pixi.boardDanger = new PIXI.Graphics()
+        Game.pixi.boardDanger = new PIXI.Graphics()
             .rect(0, 0, width, height)
             .fill("red")
-        pixi.boardDanger.alpha = 0;
-        grid.addChild(pixi.boardDanger);
+        Game.pixi.boardDanger.alpha = 0;
+        grid.addChild(Game.pixi.boardDanger);
 
-        pixi.border = new PIXI.Graphics()
+        Game.pixi.border = new PIXI.Graphics()
             .lineTo(0, height).lineTo(width, height).lineTo(width, 0)
             .stroke({ color: 0xffffff, width: 2, alignment: 0.5 })
-        grid.addChild(pixi.border);
+        grid.addChild(Game.pixi.border);
 
         const rectHold = new PIXI.Graphics()
             .moveTo(0, height * 1 / 4).lineTo(width * 2 / 5, height * 1 / 4)
@@ -126,7 +155,7 @@ export class Visuals {
         grid.addChild(icons.reset);
         grid.addChild(icons.settings);
         grid.addChild(icons.edit);
-        pixi.editButton = icons.edit;
+        Game.pixi.editButton = icons.edit;
     }
 
     createTextGraphic(style, name, pos, parent, alpha = 0, msg = "") {
@@ -143,15 +172,15 @@ export class Visuals {
         return text;
     }
 
-    createTexts(pixi, scales) {
+    createTexts(scales) {
         const width = scales.bw;
         const height = scales.bh;
         this.textPosConsts = { width, height };
         const defaultPos = { x: 0, y: 0, dx: 0, dy: 0, anchorX: 0, anchorY: 0 };
-        pixi.statTexts = [];
+        Game.pixi.statTexts = [];
 
-        const grid = pixi.app.stage.getChildByLabel("grid");
-        const txtCnt = pixi.app.stage.getChildByLabel("textContainer");
+        const grid = Game.pixi.app.stage.getChildByLabel("grid");
+        const txtCnt = Game.pixi.app.stage.getChildByLabel("textContainer");
 
         const style = new PIXI.TextStyle({ fontFamily: "MajorMonoDisplay", fontSize: 18, fill: "white", fontWeight: "bold", letterSpacing: 1 });
         const warningstyle = new PIXI.TextStyle({ fontFamily: "Montserrat, sans-serif", fontSize: 18, fill: "red", fontWeight: "bold", letterSpacing: 1 });
@@ -185,11 +214,11 @@ export class Visuals {
             const stat = this.createTextGraphic(statStyle, "stat" + i, { ...defaultPos, x: -1 / 20, y: 1 - pos * 2.5 / 20, anchorX: 1 }, txtCnt, 1);
             const statText = this.createTextGraphic(statTextStyle, "statText" + i, { ...defaultPos, x: -1 / 20, y: 1 - pos * 2.5 / 20 - 2 / 40, anchorX: 1 }, txtCnt, 1);
             const statSecondary = this.createTextGraphic(statSecondaryStyle, "statSecondary" + i, { ...defaultPos, x: -7 / 20, y: 1 - pos * 2.5 / 20 - 1 / 40, anchorX: 1 }, txtCnt, 1);
-            pixi.statTexts.push({ stat, statText, statSecondary });
+            Game.pixi.statTexts.push({ stat, statText, statSecondary });
         });
 
         Object.keys(this.textSprites).forEach(key => {
-            pixi.texts[key] = { sprite: this.textSprites[key], animation: gsap.timeline() };
+            Game.pixi.texts[key] = { sprite: this.textSprites[key], animation: gsap.timeline() };
         })
     }
 }

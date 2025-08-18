@@ -104,6 +104,7 @@ export class Animations {
 
     // ready set go text
     readySetGoText() {
+        if (Game.replay.seeking) return;
         this.texts.ready.animation.kill();
         this.texts.set.animation.kill();
         this.texts.go.animation.kill();

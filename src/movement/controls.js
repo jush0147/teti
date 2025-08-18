@@ -1,12 +1,14 @@
 import { disabledKeys } from "../data/data.js";
 import { Game } from "../main.js";
+import { TetiInterval } from "./tetitimers.js";
 
 export class Controls {
     /**
      * @type {{RIGHT: boolean|string, LEFT: boolean|string, DOWN: boolean|string}}
      */
     directionState = { RIGHT: false, LEFT: false, DOWN: false };
-    timings = { arr: 0, das: 0, sd: 0 }; // timeout and interval ids
+    /**@type {Record<string, TetiInterval? >} */
+    timings = { arr: null, sd: null };
     menuKey = "Escape"; // html modals close using escape
     cursorVisible = true;
     resetting = false;
@@ -24,9 +26,9 @@ export class Controls {
             Game.replay.togglePause(); return;
         }
 
-        if (Game.replay.state == "replaying") return;
+        if (Game.replay.state == "replaying" | Game.replay.state == "paused") return;
 
-        if (Game.modals.open || Game.modals.closing || Game.mechanics.locking.timings.clearDelay != 0) return;
+        if (Game.modals.open || Game.modals.closing || Game.mechanics.locking.clearDelay != null) return;
         if (event.key != this.menuKey && !Game.started && Game.settings.game.readysetgo == false) Game.movement.startTimers();
         if (key == keys.resetKey) this.retry(true);
         if (!Game.started && Game.settings.game.readysetgo == true) return;
@@ -58,15 +60,15 @@ export class Controls {
         else if (key == keys.redoKey) Game.history.redo()
     }
 
-    runKeyQueue() {
+    runKeyQueue(curTime) {
         this.keyDownQueue.forEach(key => {
             if (key == "cwKey") Game.movement.rotate("CW");
             else if (key == "ccwKey") Game.movement.rotate("CCW");
             else if (key == "rotate180Key") Game.movement.rotate("180");
             else if (key == "hdKey") Game.movement.harddrop();
             else if (key == "holdKey") Game.mechanics.switchHold();
-            else if (key == "rightKey") this.startDas("RIGHT");
-            else if (key == "leftKey") this.startDas("LEFT");
+            else if (key == "rightKey") this.startDas("RIGHT", curTime);
+            else if (key == "leftKey") this.startDas("LEFT", curTime);
             else if (key == "sdKey") this.startArrSD();
         });
         this.keyDownQueue = [];
@@ -78,18 +80,17 @@ export class Controls {
         this.keyUpQueue = [];
     }
 
-    startDas(direction) {
+    startDas(direction, time) {
         Game.movement.movePieceSide(direction);
         this.directionState[direction] = "das";
         this.stopInterval("arr");
-        this.startedDas = performance.now();
+        this.startedDas = time;
         this.currentDirection = direction;
     }
 
-    timer() {
+    timer(curTime) {
         if (this.currentDirection == undefined || this.startedDas == undefined) return;
-        const now = performance.now();
-        if (now - this.startedDas < Game.settings.handling.das) return;
+        if (curTime - this.startedDas < Game.settings.handling.das) return;
         this.startArr(this.currentDirection)
         this.currentDirection = undefined;
         this.startedDas = undefined;
@@ -106,13 +107,14 @@ export class Controls {
         this.directionState[direction] = "arr";
         this.stopInterval("arr");
         if (Game.settings.handling.arr == 0) {
-            this.timings.arr = -1;
+            this.timings.arr = null;
             Game.movement.movePieceSide(direction, Infinity);
         } else {
-            this.timings.arr = setInterval(
+            this.timings.arr = new TetiInterval(
                 () => Game.movement.movePieceSide(direction),
                 Game.settings.handling.arr
-            );
+            )
+            if (!Game.replay.seeking) this.timings.arr.startAuto();
         }
     }
 
@@ -120,17 +122,18 @@ export class Controls {
         this.directionState["DOWN"] = "arr";
         clearInterval(this.timings.sd);
         if (Game.settings.handling.sdarr == 0) {
-            this.timings.sd = -1;
+            this.timings.sd = null;
             Game.movement.movePieceDown(true, true);
             return;
         }
-        this.timings.sd = setInterval(
+        this.timings.sd = new TetiInterval(
             () => {
                 Game.movement.movePieceDown(false);
                 Game.stats.score += 1;
             },
             Game.settings.handling.sdarr
         );
+        if (!Game.replay.seeking) this.timings.sd.startAuto();
     }
 
     endDasArr(direction) {
@@ -162,14 +165,11 @@ export class Controls {
             this.startArrSD();
     }
 
-    stopTimeout(name) {
-        clearTimeout(this.timings[name]);
-        this.timings[name] = 0;
-    }
-
     stopInterval(name) {
-        clearInterval(this.timings[name]);
-        this.timings[name] = 0;
+        if (this.timings[name] != null) {
+            this.timings[name].stopAuto();
+            this.timings[name] = null;
+        }
     }
 
     retry(animation) {

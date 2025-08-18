@@ -40,14 +40,16 @@ export class Zenith {
         }
 
         startZenithMode() {
-            clearInterval(Game.zenithTimer);
+            Game.zenithTimer = false;
             document.getElementById("climbSpeedBar").style.display = "none"
             Game.pixi.CreateSpeedrunContainer()
             Game.pixi.StopSpeedrun()
             if(Game.settings.game.gamemode != "zenith") return
             document.getElementById("climbSpeedBar").style.display = "block"
-            Game.zenithTimer = setInterval(
-                () => {
+            Game.zenithTimer = true;
+        }
+
+        zenithModeTick() {
                         let t = Math.floor(Game.stats.climbSpeed),
                             o = .25 * t,
                             a = this.GetSpeedCap(this.altitude);
@@ -132,8 +134,6 @@ export class Zenith {
                     if(this.tickPass >= 43200){ //12m
                         
                     }
-            }
-                , 1000 / Game.tickrate);
         }
 
         drawClimbSpeedBar(speed, point, require){ // todo: drawing polygons (parallelogram) cus idk

@@ -1,4 +1,5 @@
 import { Game } from "../main.js";
+import { TetiInterval } from "../movement/tetitimers.js";
 import { ClearLines } from "./clearlines.js";
 import { LockPiece } from "./locking.js";
 import { PerlinNoise } from "./perlin.js";
@@ -81,17 +82,18 @@ export class Mechanics {
     }
 
     startGravity() {
-        clearInterval(Game.gravityTimer);
+        if (Game.gravityTimer) Game.gravityTimer.stopAuto()
         if (Game.settings.game.gravitySpeed > 1000) return;
         if (Game.settings.game.gravitySpeed == 0) {
             Game.movement.movePieceDown(true);
             return;
         }
         Game.movement.movePieceDown(false);
-        Game.gravityTimer = setInterval(
+        Game.gravityTimer = new TetiInterval(
             () => Game.movement.movePieceDown(false),
             Game.settings.game.gravitySpeed
         );
+        if (!Game.replay.seeking) Game.gravityTimer.startAuto();
     }
 
     addGarbage(lines) {
@@ -114,7 +116,7 @@ export class Mechanics {
     addSingleGarbageLine(column) {
         const allminos = Game.board.getMinos("A"); // move all minos up
         if (Game.movement.checkCollision(allminos, "DOWN")) {
-            if (this.locking.timings.lockdelay == 0) this.locking.scheduleLock();
+            if (this.locking.lockdelay == null) this.locking.scheduleLock();
             Game.board.moveMinos(allminos, "UP", 1);
         }
 
@@ -152,12 +154,14 @@ export class Mechanics {
 
     attackCaps = [0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 5]
     sendMeter = 0;
-    simulateGarbage(time) {
+    TICKS = 60;
+
+    simulateGarbage(totalTicks) {
         if (Game.settings.game.gamemode != "zenith") return;
-        if (time % (Game.tickrate / 2) != 0) return; // 0.5s clock
+        if (totalTicks % (this.TICKS / 2) != 0) return; // 0.5s clock todo: convert this to use deltaTime from pixi
         const floor = Game.zenith.GetFloorLevel(Game.zenith.altitude);
 
-        const val = this.perlin.getVal(time / Game.tickrate) - (0.6 - floor * 0.02);
+        const val = this.perlin.getVal(totalTicks / this.TICKS) - (0.6 - floor * 0.02);
         if (val > 0) this.sendMeter += val
 
         this.perlin.amplitude = 1.1 + (floor * 0.05);

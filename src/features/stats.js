@@ -67,9 +67,9 @@ export class GameStats {
         z: [0, 0, 0, 0],
     };
 
-    updateStats() {
-        this.time += 1 / Game.tickrate;
-        Game.grandmaster.sectionTime += 1 / Game.tickrate;
+    updateStats(dt) {
+        this.time += dt / 1000;
+        Game.grandmaster.sectionTime += dt / 1000;
 
         this.pps = this.pieceCount / this.time;
         this.apm = this.attack * 60 / this.time;

@@ -10,7 +10,7 @@ export class Garbage {
 
     addGarbageQueue(damage) {
         if (damage <= 0) return;
-        this.garbageQueue.push({ damage: damage, travel: Game.tickrate * Game.settings.game.garbageTravelTime });
+        this.garbageQueue.push({ damage: damage, travel: 1000 * Game.settings.game.garbageTravelTime });
         if (damage > 4) Game.sounds.playSound("garbage_in_large");
         else if (damage > 0) Game.sounds.playSound("garbage_in_small");
 
@@ -29,18 +29,20 @@ export class Garbage {
                 damage = 0;
             }
         }
+        
         Game.pixi.updateGarbageBar(this.garbageQueue);
         Game.sounds.playSound("offset");
     }
 
     sendGarbageQueue() {
-        const garbage = this.garbageQueue.filter(g => g.travel <= 0);
+        const garbage = this.garbageQueue.filter(g => g.travel < 0);
         garbage.forEach(g => {
             Game.mechanics.addGarbage(g.damage);
             Game.stats.recieved += g.damage;
         })
         this.garbageQueue = this.garbageQueue.filter(g => g.travel > 0);
-        Game.pixi.updateGarbageBar(this.garbageQueue);
+
+        if (garbage.length > 0) Game.pixi.updateGarbageBar(this.garbageQueue);
     }
 
     cancelGarbage(damage) {
@@ -55,8 +57,8 @@ export class Garbage {
         return this.garbageQueue.reduce((total, g) => total + g.damage, 0);
     }
 
-    tickGarbage() {
-        this.garbageQueue.forEach(g => g.travel--);
-        if (this.garbageQueue.filter(g => g.travel == 0).length > 0) Game.pixi.updateGarbageBar(this.garbageQueue);
+    tickGarbage(dt) {
+        this.garbageQueue.forEach(g => g.travel -= dt);
+        if (this.garbageQueue.filter(g => g.travel < 0).length > 0) Game.pixi.updateGarbageBar(this.garbageQueue);
     }
 }

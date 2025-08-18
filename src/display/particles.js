@@ -54,6 +54,7 @@ export class Particles {
     }
 
     spawnParticles(posX, posY, type, pieceWidth = 1, cw = false, colour = "white") {
+        if (Game.replay.seeking) return;
         if (!Game.settings.display.particles) return;
 
         const boardWidth = Game.pixi.width;

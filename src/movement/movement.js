@@ -10,9 +10,7 @@ export class Movement {
         Game.mechanics.startGravity();
         Game.modes.startSurvival();
         Game.mechanics.locking.lockingResume();
-        Game.gameTimer = setInterval(() =>
-            Game.gameClock(), (1000 / Game.tickrate)
-        );
+        Game.gameTimer = true;
     }
 
     startCountdown() {

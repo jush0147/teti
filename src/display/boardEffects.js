@@ -63,7 +63,7 @@ export class BoardEffects {
         return num
     }
 
-    rainbowBoard() {
+    rainbowBoard(dt) {
         const stats = Game.stats;
         const pbs = Game.profilestats.personalBests;
         const gamemode = Game.settings.game.gamemode;
@@ -84,7 +84,7 @@ export class BoardEffects {
             this.toggleRainbow(true);
         }
 
-        this.paceCooldown = Game.tickrate * 3;
+        this.paceCooldown = (1000 / dt) * 3;
     }
 
     toggleRainbow(pace) {

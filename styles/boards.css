@@ -108,7 +108,7 @@
 #redochoices {
     position: absolute;
     display: flex;
-    bottom: 8vh;
+    bottom: 10vh;
     width: 100%;
     flex-direction: row;
     text-align: center;

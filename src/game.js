@@ -26,13 +26,12 @@ import { Garbage } from "./mechanics/garbage.js";
 export class GameClass {
     started;
     ended;
-    gameTimer = 0; // id of timeout
+    gameTimer = false; // is timer running
     survivalTimer = 0; // id of timeout
-    gravityTimer = 0;
-    zenithTimer = 0;
+    gravityTimer = null;
+    zenithTimer = false
     grandmasterTimer = 0;
     version = '1.4.4';
-    tickrate = 60;
 
     elementReason = document.getElementById("reason");
     elementResult = document.getElementById("result");
@@ -94,10 +93,10 @@ export class GameClass {
     }
 
     stopGameTimers() { //stop all the game's timers
-        clearInterval(this.gravityTimer);
-        clearInterval(this.gameTimer);
+        if (this.gravityTimer) this.gravityTimer.stopAuto();
+        this.gameTimer = false;
         clearInterval(this.survivalTimer);
-        clearInterval(this.zenithTimer);
+        this.zenithTimer = false;
         clearInterval(this.grandmasterTimer);
         this.mechanics.locking.lockingPause();
         clearTimeout(this.movement.startTimersTimeout);
@@ -124,6 +123,7 @@ export class GameClass {
             this.ended = true;
             this.modals.openModal("replaysDialog");
             this.replay.stop();
+            this.pixi.seekBar.visible = false;
             return;
         }
 
@@ -158,6 +158,7 @@ export class GameClass {
 
         this.board.resetBoard();
         this.mechanics.locking.clearLockDelay();
+        this.controls.resetMovements();
         this.boardeffects.toggleRainbow(false);
         this.renderer.renderDanger();
         this.particles.clearParticles();
@@ -177,18 +178,9 @@ export class GameClass {
 
         this.renderer.renderSidebar();
         this.modes.checkFinished();
-        this.stats.updateStats();
-        this.pixi.updateAlpha();
+        this.stats.updateStats(1);
+        this.pixi.updateAlpha(1);
         this.boardeffects.rainbowBoard();
-    }
-
-    gameClock() {
-        this.renderer.renderSidebar();
-        this.modes.checkFinished();
-        this.stats.updateStats();
-        this.boardeffects.rainbowBoard();
-        this.mechanics.simulateGarbage(this.zenith.tickPass);
-        this.garbage.tickGarbage();
     }
 
     versionChecker() {
@@ -196,5 +188,4 @@ export class GameClass {
         document.getElementById('updatetext').style.display = this.version == userver ? "none" : "block";
         window.localStorage.setItem('version', this.version);
     }
-
 }
