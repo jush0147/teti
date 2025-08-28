@@ -116,6 +116,10 @@ export class LockPiece {
             Game.mechanics.spawnPiece(Game.bag.cycleNext());
             Game.history.save();
             this.clearDelay = null;
+            // Notify MisaMino bot of game state change
+            if (Game.misamino) {
+                Game.misamino.onGameStateChange();
+            }
         }
 
         if (delay == 0) onClear();
