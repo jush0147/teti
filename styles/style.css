@@ -29,6 +29,13 @@ body {
     --background: black;
 }
 
+/* Adjust body padding on mobile to account for touch controls */
+@media (max-width: 768px) {
+    body {
+        padding-bottom: 120px;
+    }
+}
+
 #splashScreen {
     position: fixed;
     width: 100vw;
@@ -216,14 +223,198 @@ body {
 /* MisaMino Bot Toggle Button */
 #misamino-toggle {
     background-color: var(--bot-inactive) !important;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    border: 2px solid var(--bot-inactive) !important;
+    font-size: 1.1em !important;
+    font-weight: bold !important;
+    min-width: 80px !important;
 }
 
 #misamino-toggle.active {
     background-color: var(--bot-active) !important;
-    box-shadow: 0 0 10px var(--bot-active);
+    border: 2px solid var(--bot-active) !important;
+    box-shadow: 0 0 15px var(--bot-active);
+    transform: scale(1.05);
 }
 
 #misamino-toggle:hover {
     opacity: 0.8;
+    transform: scale(1.02);
+}
+
+#misamino-toggle span {
+    color: #fff !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Make bot button more prominent on mobile */
+@media (max-width: 768px) {
+    #misamino-toggle {
+        min-width: 90px !important;
+        min-height: 50px !important;
+        font-size: 1.2em !important;
+        border-width: 3px !important;
+    }
+    
+    #misamino-toggle.active {
+        box-shadow: 0 0 20px var(--bot-active);
+        transform: scale(1.1);
+    }
+}
+
+/* Mobile Touch Controls */
+.mobile-only {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-only {
+        display: block;
+    }
+}
+
+#mobile-controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 120px;
+    background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    z-index: 1000;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.control-section {
+    display: grid;
+    gap: 8px;
+}
+
+.left-controls {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.right-controls {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.control-btn {
+    width: 60px;
+    height: 45px;
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+    border: 2px solid #444;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.1s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.control-btn:active {
+    transform: scale(0.95);
+    background: linear-gradient(145deg, #1a1a1a, #2a2a2a);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.control-btn:hover {
+    border-color: #666;
+    background: linear-gradient(145deg, #333, #222);
+}
+
+.control-btn span {
+    pointer-events: none;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Specific button styling */
+#btn-left, #btn-right {
+    background: linear-gradient(145deg, #2a4a7a, #1a3a6a);
+    border-color: #4a6a9a;
+}
+
+#btn-left:active, #btn-right:active {
+    background: linear-gradient(145deg, #1a3a6a, #2a4a7a);
+}
+
+#btn-soft-drop, #btn-hard-drop {
+    background: linear-gradient(145deg, #7a4a2a, #6a3a1a);
+    border-color: #9a6a4a;
+}
+
+#btn-soft-drop:active, #btn-hard-drop:active {
+    background: linear-gradient(145deg, #6a3a1a, #7a4a2a);
+}
+
+#btn-hold {
+    background: linear-gradient(145deg, #4a7a2a, #3a6a1a);
+    border-color: #6a9a4a;
+}
+
+#btn-hold:active {
+    background: linear-gradient(145deg, #3a6a1a, #4a7a2a);
+}
+
+#btn-cw, #btn-ccw, #btn-180 {
+    background: linear-gradient(145deg, #7a2a4a, #6a1a3a);
+    border-color: #9a4a6a;
+}
+
+#btn-cw:active, #btn-ccw:active, #btn-180:active {
+    background: linear-gradient(145deg, #6a1a3a, #7a2a4a);
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    body {
+        padding-bottom: 110px !important;
+    }
+    
+    #mobile-controls {
+        padding: 8px 15px;
+        height: 110px;
+    }
+    
+    .control-btn {
+        width: 55px;
+        height: 40px;
+        font-size: 12px;
+    }
+    
+    .control-section {
+        gap: 6px;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 360px) {
+    body {
+        padding-bottom: 100px !important;
+    }
+    
+    #mobile-controls {
+        padding: 6px 10px;
+        height: 100px;
+    }
+    
+    .control-btn {
+        width: 50px;
+        height: 35px;
+        font-size: 11px;
+    }
+    
+    .control-section {
+        gap: 4px;
+    }
 }

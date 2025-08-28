@@ -23,6 +23,7 @@ import { Animations } from "./display/animations.js";
 import { Replay } from "./features/replays.js";
 import { Garbage } from "./mechanics/garbage.js";
 import { MisaMinoBot } from "./features/misamino.js";
+import { MobileControls } from "./features/mobilecontrols.js";
 
 export class GameClass {
     started;
@@ -64,6 +65,7 @@ export class GameClass {
         this.animations = new Animations();
         this.replay = new Replay();
         this.misamino = new MisaMinoBot();
+        this.mobileControls = new MobileControls();
 
         this.menuactions.loadSettings();
         this.board.resetBoard();
@@ -73,6 +75,7 @@ export class GameClass {
         this.renderer.setEditPieceColours();
         this.sounds.initSounds();
         await this.misamino.init();
+        this.mobileControls.init();
         this.startGame();
         this.loadStateFromString(new URLSearchParams(window.location.search).get("map"));
         this.menuactions.addRangeListener();
@@ -94,6 +97,11 @@ export class GameClass {
         this.history.save();
         this.replay.start();
         this.misamino.onGameStart();
+        
+        // Update mobile controls visibility
+        if (this.mobileControls) {
+            this.mobileControls.updateVisibility();
+        }
     }
 
     stopGameTimers() { //stop all the game's timers
@@ -139,6 +147,11 @@ export class GameClass {
         this.elementResult.textContent = bottom;
         this.profilestats.saveSession();
         this.misamino.onGameEnd();
+        
+        // Update mobile controls visibility
+        if (this.mobileControls) {
+            this.mobileControls.updateVisibility();
+        }
     }
 
     loadStateFromString(input) {

@@ -48,6 +48,11 @@ export class ModalActions {
         if (id == "settingsPanel") this.animateSettingsPanel();
         this.open = true;
         Game.sounds.toggleSongMuffle(this.open);
+        
+        // Update mobile controls visibility
+        if (Game.mobileControls) {
+            Game.mobileControls.updateVisibility();
+        }
     }
 
     animateSettingsPanel() {
@@ -132,6 +137,12 @@ export class ModalActions {
         };
         this.open = false;
         Game.sounds.toggleSongMuffle(this.open);
+        
+        // Update mobile controls visibility
+        if (Game.mobileControls) {
+            Game.mobileControls.updateVisibility();
+        }
+        
         element.classList.add("closingAnimation");
         element.addEventListener("animationend", closingAnimation);
     }

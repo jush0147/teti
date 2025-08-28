@@ -52,6 +52,9 @@ window.addEventListener("resize", () => {
         Game.renderer.setupSidebar();
         Game.renderer.updateNext();
         Game.renderer.updateHold();
+        if (Game.mobileControls) {
+            Game.mobileControls.handleOrientationChange();
+        }
     }, 0);
 })
 
