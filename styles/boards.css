@@ -8,6 +8,11 @@
     pointer-events: none;
 }
 
+/* Allow interactive controls inside board */
+#board .ingameBotButton {
+    pointer-events: auto;
+}
+
 #lockTimer,
 #lockCounter {
     position: absolute;

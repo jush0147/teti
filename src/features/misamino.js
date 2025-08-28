@@ -18,7 +18,7 @@ export class MisaMinoBot {
         
         try {
             // Use relative path that works both locally and on GitHub Pages
-            const workerPath = new URL('./assets/misamino/misaImport.js', window.location.href).href;
+            const workerPath = new URL('./assets/misamino/misaImport.js', window.location.origin + window.location.pathname.replace(/[^/]*$/, ''));
             this.worker = new Worker(workerPath);
             this.worker.onmessage = (e) => this.handleWorkerMessage(e);
             this.worker.onerror = (error) => {
