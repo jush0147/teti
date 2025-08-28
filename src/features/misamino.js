@@ -36,14 +36,22 @@ export class MisaMinoBot {
 
     handleWorkerMessage(e) {
         const data = e.data;
-        
-        if (data.type === 'suggestion' && this.isActive) {
+        // Debug log to verify message shape
+        console.debug('MisaMino worker message:', data);
+
+        // Accept both explicit 'suggestion' and any payload with moves array
+        if (this.isActive && (data.type === 'suggestion' || Array.isArray(data.moves))) {
             this.currentMoves = data.moves || [];
             this.moveIndex = 0;
             this.pendingSuggestion = false;
-            
+
             if (this.currentMoves.length > 0) {
                 this.executeMoves();
+            } else if (this.singleRun) {
+                Game.modals.generate.notif("MisaMino", "No moves returned", "error");
+                this.singleRun = false;
+                this.isActive = false;
+                this.stopBot();
             }
         }
     }

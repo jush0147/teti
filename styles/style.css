@@ -232,7 +232,7 @@ body {
 .ingameBotButton {
     position: absolute;
     right: 8px;
-    bottom: 8px;
+    top: 8px;
     z-index: 5;
     background: linear-gradient(135deg, #3b82f6, #1e40af);
     color: #fff;
