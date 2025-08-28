@@ -22,6 +22,7 @@ import { PixiRender } from "./display/pixirender.js";
 import { Animations } from "./display/animations.js";
 import { Replay } from "./features/replays.js";
 import { Garbage } from "./mechanics/garbage.js";
+import { MisaMinoBot } from "./features/misamino.js";
 
 export class GameClass {
     started;
@@ -62,6 +63,7 @@ export class GameClass {
         this.garbage = new Garbage();
         this.animations = new Animations();
         this.replay = new Replay();
+        this.misamino = new MisaMinoBot();
 
         this.menuactions.loadSettings();
         this.board.resetBoard();
@@ -70,6 +72,7 @@ export class GameClass {
         this.renderer.renderStyles();
         this.renderer.setEditPieceColours();
         this.sounds.initSounds();
+        await this.misamino.init();
         this.startGame();
         this.loadStateFromString(new URLSearchParams(window.location.search).get("map"));
         this.menuactions.addRangeListener();
@@ -90,6 +93,7 @@ export class GameClass {
         this.mechanics.spawnPiece(this.bag.cycleNext(true), true);
         this.history.save();
         this.replay.start();
+        this.misamino.onGameStart();
     }
 
     stopGameTimers() { //stop all the game's timers
@@ -134,6 +138,7 @@ export class GameClass {
         this.elementReason.textContent = top;
         this.elementResult.textContent = bottom;
         this.profilestats.saveSession();
+        this.misamino.onGameEnd();
     }
 
     loadStateFromString(input) {

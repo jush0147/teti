@@ -9,6 +9,15 @@ The info page can be found [here](https://titanplayz100.github.io/teti/info.html
 
 FIREFOX is compatible!!!!
 
+## New Feature: MisaMino AI Bot Integration
+
+TETI now includes an integrated MisaMino AI bot that can automatically play in Zen/Custom mode! 
+
+- **Toggle the bot** using the "BOT" button in the settings panel (only visible in Zen/Custom mode)
+- **AI-powered gameplay** with real-time board analysis and optimal move execution
+- **Seamless switching** between manual and automatic play
+- See `MISAMINO_INTEGRATION.md` for detailed information
+
 ## Desktop App
 Releases are now run through a workflow. They are **up to date** and contain all the latest features.
 

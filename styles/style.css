@@ -16,6 +16,8 @@
     --p-green: #53b565;
     --green: #30f24d;
     --gray: #808080;
+    --bot-active: #4CAF50;
+    --bot-inactive: #666;
 }
 
 body {
@@ -209,4 +211,19 @@ body {
     100% {
         opacity: 1;
     }
+}
+
+/* MisaMino Bot Toggle Button */
+#misamino-toggle {
+    background-color: var(--bot-inactive) !important;
+    transition: background-color 0.3s ease;
+}
+
+#misamino-toggle.active {
+    background-color: var(--bot-active) !important;
+    box-shadow: 0 0 10px var(--bot-active);
+}
+
+#misamino-toggle:hover {
+    opacity: 0.8;
 }
