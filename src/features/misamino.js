@@ -10,6 +10,7 @@ export class MisaMinoBot {
         this.moveIndex = 0;
         this.autoPlayInterval = null;
         this.autoPlayDelay = 500; // 500ms between moves
+        this.singleRun = false;
     }
 
     async init() {
@@ -78,6 +79,34 @@ export class MisaMinoBot {
         }
         
         Game.modals.generate.notif("MisaMino", this.isActive ? "Bot enabled" : "Bot disabled", "info");
+    }
+
+    // Run bot once: request a single suggestion and execute it, do not loop
+    runOnce() {
+        if (!this.isInitialized) {
+            Game.modals.generate.notif("MisaMino", "Bot not initialized", "error");
+            return;
+        }
+        if (Game.settings.game.gamemode !== 'custom') {
+            Game.modals.generate.notif("MisaMino", "Custom mode only", "error");
+            return;
+        }
+        if (Game.ended) return;
+
+        this.singleRun = true;
+        this.isActive = true;
+        this.currentMoves = [];
+        this.moveIndex = 0;
+        this.pendingSuggestion = false;
+        this.sendGameState();
+        this.requestSuggestion();
+
+        // Flash button feedback
+        const btn = document.getElementById('misamino-ingame');
+        if (btn) {
+            btn.style.filter = 'brightness(1.2)';
+            setTimeout(() => btn.style.filter = '', 150);
+        }
     }
 
     startBot() {
@@ -230,12 +259,17 @@ export class MisaMinoBot {
                 clearInterval(this.autoPlayInterval);
                 this.autoPlayInterval = null;
                 
-                // Request next suggestion after completing moves
-                if (this.isActive && !Game.ended) {
+                // In loop mode, request next suggestion. In singleRun, stop.
+                if (this.isActive && !Game.ended && !this.singleRun) {
                     setTimeout(() => {
                         this.sendGameState();
                         this.requestSuggestion();
                     }, 100);
+                } else if (this.singleRun) {
+                    // reset flags so next click will run once again
+                    this.singleRun = false;
+                    this.isActive = false;
+                    this.stopBot();
                 }
                 return;
             }
@@ -323,9 +357,9 @@ export class MisaMinoBot {
 
     // Called when game starts
     onGameStart() {
-        if (this.isActive) {
-            this.startBot();
-        }
+        // No-op for single-shot mode; show/hide in-game button here
+        const btn = document.getElementById('misamino-ingame');
+        if (btn) btn.style.display = (Game.settings.game.gamemode === 'custom') ? 'block' : 'none';
     }
 
     destroy() {

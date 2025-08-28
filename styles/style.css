@@ -227,3 +227,22 @@ body {
 #misamino-toggle:hover {
     opacity: 0.8;
 }
+
+/* In-game BOT button */
+.ingameBotButton {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    z-index: 5;
+    background: linear-gradient(135deg, #3b82f6, #1e40af);
+    color: #fff;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-weight: bold;
+    cursor: pointer;
+    display: none;
+}
+.ingameBotButton:hover {
+    filter: brightness(1.1);
+}

@@ -60,11 +60,11 @@ export class Modes {
         Game.pixi.texts.objectiveNameText.sprite.text = this.modeJSON.objectiveText.toUpperCase();
         Game.pixi.toggleEditButton(Game.settings.game.gamemode == 'custom');
         
-        // Show/hide MisaMino bot button based on game mode
+        // Hide old settings-panel BOT toggle; show in-game button instead
         const botButton = document.getElementById('misamino-toggle');
-        if (botButton) {
-            botButton.style.display = Game.settings.game.gamemode === 'custom' ? 'block' : 'none';
-        }
+        if (botButton) botButton.style.display = 'none';
+        const ingameBtn = document.getElementById('misamino-ingame');
+        if (ingameBtn) ingameBtn.style.display = Game.settings.game.gamemode === 'custom' ? 'block' : 'none';
     }
 
     setGamemode(mode) {
