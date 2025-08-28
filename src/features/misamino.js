@@ -138,21 +138,28 @@ export class MisaMinoBot {
             const row = [];
             for (let x = 0; x < 10; x++) {
                 let cellValue = null;
-                
-                // Check if this position is within TETI's board bounds
-                if (y < 24 && x < 10) {
-                    // Get all minos at this position
-                    const boardPos = [x, y];
-                    const cellContents = Game.board.boardState[y] && Game.board.boardState[y][x];
-                    
-                    // Check for solid pieces (S = solid, placed pieces)
-                    if (Game.board.checkMino(boardPos, "S")) {
-                        // Extract piece type from the cell value
-                        const pieceType = cellContents ? cellContents.replace('S ', '') : null;
-                        cellValue = this.convertPieceType(pieceType);
+                const boardPos = [x, y];
+                const cellContents = (Game.board.boardState[y] && Game.board.boardState[y][x]) || "";
+
+                // Solid placed minos are marked with 'S'. Extract the piece token if present.
+                if (Game.board.checkMino(boardPos, "S")) {
+                    const tokens = cellContents.split(" ").filter(Boolean);
+                    // Prefer explicit piece tokens
+                    const pieceToken = tokens.find(t => {
+                        const up = t.toUpperCase();
+                        return ["I","O","T","S","Z","J","L"].includes(up);
+                    });
+                    if (pieceToken) {
+                        cellValue = this.convertPieceType(pieceToken);
+                    } else if (tokens.includes("G")) {
+                        // Garbage cell without explicit piece type; mark as garbage/occupied
+                        cellValue = "G";
+                    } else {
+                        // Fallback occupied cell
+                        cellValue = null;
                     }
                 }
-                
+
                 row.push(cellValue);
             }
             board.push(row);
