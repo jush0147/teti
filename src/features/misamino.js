@@ -9,7 +9,7 @@ export class MisaMinoBot {
         this.currentMoves = [];
         this.moveIndex = 0;
         this.autoPlayInterval = null;
-        this.autoPlayDelay = 500; // 500ms between moves
+        this.autoPlayDelay = 1000; // 1000ms (1 second) between pieces
     }
 
     async init() {
@@ -43,20 +43,31 @@ export class MisaMinoBot {
         
         console.log('Testing MisaMino worker...');
         
-        // Send a test game state
+        // Create a test board with some pieces at the bottom
+        const testBoard = Array(40).fill(null).map(() => Array(10).fill(null));
+        
+        // Add some test pieces at the bottom
+        testBoard[0][0] = 'I'; // Bottom left
+        testBoard[0][1] = 'T';
+        testBoard[0][2] = 'L';
+        testBoard[1][0] = 'S';
+        testBoard[1][1] = 'Z';
+        
         const testGameState = {
             type: "start",
             hold: null,
             queue: ["I", "T", "L", "O", "S", "Z"],
             combo: 0,
             back_to_back: false,
-            board: Array(40).fill(null).map(() => Array(10).fill(null))
+            board: testBoard
         };
         
+        console.log('Sending test game state:', testGameState);
         this.worker.postMessage(testGameState);
         
         // Request a test suggestion
         setTimeout(() => {
+            console.log('Requesting test suggestion...');
             this.worker.postMessage({ type: "suggest" });
         }, 500);
     }
@@ -119,9 +130,14 @@ export class MisaMinoBot {
         
         console.log('Starting MisaMino bot...');
         
-        // Send initial game state
-        this.sendGameState();
-        this.requestSuggestion();
+        // Small delay to ensure game is ready
+        setTimeout(() => {
+            if (this.isActive && Game.falling.piece) {
+                console.log('Bot ready, sending initial game state');
+                this.sendGameState();
+                this.requestSuggestion();
+            }
+        }, 500);
     }
 
     stopBot() {
@@ -142,6 +158,9 @@ export class MisaMinoBot {
     sendGameState() {
         if (!this.worker || !this.isActive) return;
 
+        // Debug: Check raw board state
+        this.debugBoardState();
+        
         const board = this.convertBoardToTBPFormat();
         const queue = this.getQueueArray();
         const hold = this.getHoldPiece();
@@ -166,6 +185,35 @@ export class MisaMinoBot {
         
         this.worker.postMessage(gameState);
     }
+    
+    debugBoardState() {
+        console.log('=== TETI Board State Debug ===');
+        
+        // Check for solid pieces
+        const solidMinos = Game.board.getMinos("S");
+        console.log('Solid pieces found:', solidMinos.length);
+        
+        // Sample some board cells
+        for (let y = 0; y < Math.min(10, Game.board.boardState.length); y++) {
+            for (let x = 0; x < Game.board.boardState[y].length; x++) {
+                const cell = Game.board.boardState[y][x];
+                if (cell && cell.trim() !== "") {
+                    console.log(`Cell [${x},${y}]: "${cell}"`);
+                }
+            }
+        }
+        
+        // Check current piece info
+        if (Game.falling.piece) {
+            console.log('Current piece:', {
+                name: Game.falling.piece.name,
+                location: Game.falling.location,
+                rotation: Game.falling.rotation
+            });
+        }
+        
+        console.log('=== End Debug ===');
+    }
 
     requestSuggestion() {
         if (!this.worker || !this.isActive || this.pendingSuggestion) return;
@@ -177,25 +225,46 @@ export class MisaMinoBot {
     convertBoardToTBPFormat() {
         const board = [];
         
-        // TBP format expects 40 rows, 10 columns (bottom to top indexing)
-        // TETI board: y=0 is bottom, y=39 is top
+        // TBP format: 40 rows × 10 columns
+        // Standard Tetris: row 0 = bottom, row 39 = top
+        // We need to convert TETI's board format to TBP format
+        
         for (let y = 0; y < 40; y++) {
             const row = [];
             for (let x = 0; x < 10; x++) {
                 let cellValue = null;
                 
-                // Check if this position has a solid piece
-                if (Game.board.boardState[y] && Game.board.boardState[y][x]) {
+                // Check if this position has a solid piece in TETI
+                if (y < Game.board.boardState.length && 
+                    x < Game.board.boardState[y].length && 
+                    Game.board.boardState[y][x]) {
+                    
                     const cellContents = Game.board.boardState[y][x];
                     
-                    // Check for solid pieces (S = solid, placed pieces)
-                    if (cellContents.includes('S ')) {
-                        // Extract piece type - format is usually "S piecetype"
-                        const parts = cellContents.split(' ');
-                        const pieceIndex = parts.indexOf('S');
-                        if (pieceIndex >= 0 && pieceIndex < parts.length - 1) {
-                            const pieceType = parts[pieceIndex + 1];
-                            cellValue = this.convertPieceType(pieceType);
+                    // Parse TETI's cell format
+                    if (cellContents.includes('S')) {
+                        // Look for pattern like "S i", "S t", etc.
+                        const parts = cellContents.split(' ').filter(p => p.length > 0);
+                        
+                        for (let i = 0; i < parts.length; i++) {
+                            if (parts[i] === 'S' && i + 1 < parts.length) {
+                                const pieceType = parts[i + 1];
+                                cellValue = this.convertPieceType(pieceType);
+                                break;
+                            }
+                        }
+                        
+                        // If no piece type found after S, try other patterns
+                        if (!cellValue) {
+                            for (const part of parts) {
+                                if (part !== 'S' && part.length === 1) {
+                                    const converted = this.convertPieceType(part);
+                                    if (converted) {
+                                        cellValue = converted;
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -205,23 +274,47 @@ export class MisaMinoBot {
             board.push(row);
         }
         
-        console.log('Board state for MisaMino:', board.slice(0, 20)); // Debug: show bottom 20 rows
+        // Debug output with more details
+        const filledRows = board.filter(row => row.some(cell => cell !== null)).length;
+        const totalPieces = board.flat().filter(cell => cell !== null).length;
+        console.log(`Board conversion: ${filledRows} filled rows, ${totalPieces} total pieces`);
+        
+        if (filledRows > 0) {
+            console.log('Sample board data:');
+            for (let y = 0; y < Math.min(5, board.length); y++) {
+                const row = board[y];
+                if (row.some(cell => cell !== null)) {
+                    console.log(`Row ${y}:`, row);
+                }
+            }
+        }
+        
         return board;
     }
 
     convertPieceType(tetiPiece) {
-        // Map TETI piece representation to standard piece letters
+        if (!tetiPiece) return null;
+        
+        // Map TETI piece representation to TBP standard piece letters
         const pieceMap = {
             'I': 'I', 'O': 'O', 'T': 'T', 'S': 'S', 'Z': 'Z', 'J': 'J', 'L': 'L',
             'i': 'I', 'o': 'O', 't': 'T', 's': 'S', 'z': 'Z', 'j': 'J', 'l': 'L'
         };
         
         if (typeof tetiPiece === 'string') {
-            return pieceMap[tetiPiece] || tetiPiece.toUpperCase();
+            const mapped = pieceMap[tetiPiece.trim()];
+            if (mapped) return mapped;
+            
+            // Try uppercase conversion as fallback
+            const upper = tetiPiece.trim().toUpperCase();
+            if (['I', 'O', 'T', 'S', 'Z', 'J', 'L'].includes(upper)) {
+                return upper;
+            }
         } else if (tetiPiece && tetiPiece.type) {
-            return pieceMap[tetiPiece.type] || tetiPiece.type.toUpperCase();
+            return this.convertPieceType(tetiPiece.type);
         }
         
+        console.warn('Unknown piece type:', tetiPiece);
         return null;
     }
 
@@ -259,20 +352,24 @@ export class MisaMinoBot {
         
         if (this.autoPlayInterval) {
             clearInterval(this.autoPlayInterval);
+            this.autoPlayInterval = null;
         }
         
-        // Execute all moves immediately for the current piece
-        // MisaMino typically returns one optimal move per piece
+        console.log(`Executing ${this.currentMoves.length} moves for current piece`);
+        
+        // Execute the moves with proper delay
         if (this.currentMoves.length > 0) {
-            console.log(`Executing ${this.currentMoves.length} moves for current piece`);
-            
-            // Execute the first (and usually only) move
-            const move = this.currentMoves[0];
-            this.executeMove(move);
-            
-            // Clear the moves array since we've processed them
-            this.currentMoves = [];
-            this.moveIndex = 0;
+            // Use setTimeout to add delay before executing the move
+            setTimeout(() => {
+                if (this.isActive && this.currentMoves.length > 0) {
+                    const move = this.currentMoves[0];
+                    this.executeMove(move);
+                    
+                    // Clear the moves array since we've processed them
+                    this.currentMoves = [];
+                    this.moveIndex = 0;
+                }
+            }, 200); // Small delay to ensure piece is fully spawned
         }
     }
 
@@ -360,15 +457,16 @@ export class MisaMinoBot {
     // Called when game state changes (new piece, line clear, etc.)
     onGameStateChange() {
         if (this.isActive && !this.pendingSuggestion) {
-            console.log('Game state changed, requesting new suggestion');
+            console.log('Game state changed, scheduling next move in 1 second');
             
-            // Small delay to ensure the new piece is fully spawned
+            // Wait 1 second before processing the next piece (1 piece per second)
             setTimeout(() => {
-                if (this.isActive && Game.falling.piece) {
+                if (this.isActive && Game.falling.piece && !this.pendingSuggestion) {
+                    console.log('Processing next piece after 1 second delay');
                     this.sendGameState();
                     this.requestSuggestion();
                 }
-            }, 100);
+            }, this.autoPlayDelay); // 1 second delay
         }
     }
 
