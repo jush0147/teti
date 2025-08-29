@@ -356,28 +356,51 @@ export class MisaMinoBot {
             Game.board.MinoToNone("A");
             Game.board.MinoToNone("Sh");
             
-            // Set piece rotation
+            // Set rotation first to compute coords
             Game.falling.rotation = targetRotation;
+            const pieceCoordsAtOrigin = Game.board.pieceToCoords(Game.falling.piece[`shape${targetRotation}`]);
+
+            // Compute a safe Y at the given X by moving down until collision
+            // Start from a reasonable top Y to avoid out-of-bounds
+            let y = Math.min(Math.max(targetY, 0), 39);
+            const coordsAtX = (yy) => pieceCoordsAtOrigin.map(([px, py]) => [px + targetX, py + yy]);
+            // Clamp inside bounds horizontally
+            if (coordsAtX(y).some(([x]) => x < 0 || x > 9)) {
+                // If out of bounds, clamp X by shifting
+                const minX = Math.min(...coordsAtX(y).map(([x]) => x));
+                const maxX = Math.max(...coordsAtX(y).map(([x]) => x));
+                const shiftLeft = minX < 0 ? -minX : 0;
+                const shiftRight = maxX > 9 ? 9 - maxX : 0;
+                const shift = shiftLeft !== 0 ? shiftLeft : shiftRight;
+                targetX += shift;
+            }
+
+            // Drop Y until just above collision with solids
+            while (y > 0 && !Game.movement.checkCollision(coordsAtX(y), "DOWN")) {
+                y--;
+            }
+            // If we're inside collision at given Y, move up until free (safety)
+            while (y < 39 && Game.movement.checkCollision(coordsAtX(y), "SPAWN")) {
+                y++;
+            }
+
+            // Update falling piece location
+            Game.falling.location = [targetX, y];
             
-            // Set piece position
-            Game.falling.location = [targetX, targetY];
-            
-            // Add piece to board at new position
-            const coords = Game.board.pieceToCoords(Game.falling.piece[`shape${targetRotation}`]);
-            Game.board.addMinos("A " + Game.falling.piece.name, coords, [targetX, targetY]);
+            // Place A minos at the computed location
+            Game.board.addMinos("A " + Game.falling.piece.name, pieceCoordsAtOrigin, [targetX, y]);
             
             // Update PIXI rotation center (with safety check)
             if (Game.pixi && typeof Game.pixi.setRotationCenterPos === 'function') {
-                Game.pixi.setRotationCenterPos([targetX, targetY], Game.falling.piece.name);
+                Game.pixi.setRotationCenterPos([targetX, y], Game.falling.piece.name);
             }
             
-            // Hard drop to lock the piece
+            // Hard drop to lock the piece using engine logic (respects collisions)
             if (Game.movement && typeof Game.movement.harddrop === 'function') {
                 Game.movement.harddrop();
             }
         } catch (error) {
             console.error('Error in setPiecePosition:', error);
-            // Stop bot if there's an error
             this.stopBot();
         }
     }
