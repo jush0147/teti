@@ -304,47 +304,35 @@ export class MisaMinoBot {
                 case 'west': targetRotation = 3; break;
             }
             
-            // Execute the move by simulating key presses
-            this.simulateMovement(x, y, targetRotation, spin);
+            // Directly set piece position and rotation, then hard drop
+            this.setPiecePosition(x, y, targetRotation, spin);
             
         } catch (error) {
             console.error('Error executing move:', error);
         }
     }
 
-    simulateMovement(targetX, targetY, targetRotation, spin) {
+    setPiecePosition(targetX, targetY, targetRotation, spin) {
         if (!Game.falling.piece || !this.isActive) return;
         
-        // Get current piece position
-        const currentX = Game.falling.location[0];
-        const currentY = Game.falling.location[1];
-        const currentRotation = Game.falling.rotation;
+        // Remove current piece from board
+        Game.board.MinoToNone("A");
+        Game.board.MinoToNone("Sh");
         
-        // Rotate to target orientation
-        const rotationDiff = (targetRotation - currentRotation + 4) % 4;
-        for (let i = 0; i < rotationDiff; i++) {
-            Game.movement.rotate("CW"); // Rotate clockwise
-        }
+        // Set piece rotation
+        Game.falling.rotation = targetRotation;
         
-        // Move horizontally
-        const horizontalDiff = targetX - currentX;
-        if (horizontalDiff > 0) {
-            for (let i = 0; i < horizontalDiff; i++) {
-                Game.movement.movePieceSide("RIGHT", 1);
-            }
-        } else if (horizontalDiff < 0) {
-            for (let i = 0; i < Math.abs(horizontalDiff); i++) {
-                Game.movement.movePieceSide("LEFT", 1);
-            }
-        }
+        // Set piece position
+        Game.falling.location = [targetX, targetY];
         
-        // Handle spin moves (T-spins, etc.)
-        if (spin && spin !== 'none') {
-            // Additional rotation for spins might be needed
-            // This depends on the specific implementation
-        }
+        // Add piece to board at new position
+        const coords = Game.board.pieceToCoords(Game.falling.piece[`shape${targetRotation}`]);
+        Game.board.addMinos("A " + Game.falling.piece.name, coords, [targetX, targetY]);
         
-        // Drop the piece
+        // Update PIXI rotation center
+        Game.pixi.setRotationCenterPos([targetX, targetY], Game.falling.piece.name);
+        
+        // Hard drop to lock the piece
         Game.movement.harddrop();
     }
 
