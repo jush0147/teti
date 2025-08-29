@@ -330,6 +330,17 @@ export class MisaMinoBot {
             
             // Convert TBP coordinates to TETI coordinates (use both X and Y)
             const [tetiX, tetiY] = this.convertTBPToTETICoordinates(x, y);
+
+            // If the bot's target piece type is different from the current active piece, try holding once
+            const botPiece = (type ?? '').toString().toUpperCase();
+            const currentPiece = (Game.falling && Game.falling.piece && Game.falling.piece.name)
+                ? Game.falling.piece.name.toUpperCase()
+                : '';
+            if (botPiece && currentPiece && botPiece !== currentPiece && !Game.ended) {
+                if (Game.mechanics && typeof Game.mechanics.switchHold === 'function') {
+                    Game.mechanics.switchHold();
+                }
+            }
             
             // Convert orientation to TETI format
             let targetRotation = 0;
