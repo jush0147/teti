@@ -328,8 +328,8 @@ export class MisaMinoBot {
             const { location, spin } = move;
             const { x, y, orientation, type } = location;
             
-            // Convert TBP coordinates to TETI coordinates (use X; ignore Y to avoid anchor mismatch)
-            const [tetiX /*, tetiY*/] = this.convertTBPToTETICoordinates(x, y);
+            // Convert TBP coordinates to TETI coordinates (use both X and Y)
+            const [tetiX, tetiY] = this.convertTBPToTETICoordinates(x, y);
             
             // Convert orientation to TETI format
             let targetRotation = 0;
@@ -340,27 +340,49 @@ export class MisaMinoBot {
                 case 'west': targetRotation = 3; break;
             }
             
-            // 1) Rotate first using engine (respects kicks and piece centers)
+            // Rotate first using engine kicks, then directly place at (x,y), then hard drop
+            this.directPlaceAndDrop(tetiX, tetiY, targetRotation);
+            
+        } catch (error) {
+            console.error('Error executing move:', error);
+        }
+    }
+
+    directPlaceAndDrop(targetX, targetY, targetRotation) {
+        if (!Game.falling.piece || Game.ended) return;
+        
+        try {
+            // 1) Rotate to the desired orientation using engine (respects kicks)
             const currentRot = Game.falling.rotation;
             const diff = (targetRotation - currentRot + 4) % 4;
             if (diff === 1) Game.movement.rotate("CW");
             else if (diff === 2) Game.movement.rotate("180");
             else if (diff === 3) Game.movement.rotate("CCW");
+
+            // 2) Remove current A/Sh and directly set location & rotation
+            Game.board.MinoToNone("A");
+            Game.board.MinoToNone("Sh");
+            Game.falling.rotation = targetRotation;
             
-            // 2) Move horizontally to align leftmost mino with target X
-            const coords = Game.board.getMinos("A");
-            if (coords.length) {
-                const currentLeft = Math.min(...coords.map(([cx]) => cx));
-                const dx = tetiX - currentLeft;
-                if (dx > 0) Game.movement.movePieceSide("RIGHT", dx);
-                else if (dx < 0) Game.movement.movePieceSide("LEFT", -dx);
+            // Clamp into board range
+            let x = Math.max(0, Math.min(9, targetX));
+            let y = Math.max(0, Math.min(39, targetY));
+
+            // 3) Add piece at exact (x,y) using shape coordinates
+            const coords = Game.board.pieceToCoords(Game.falling.piece[`shape${targetRotation}`]);
+            Game.board.addMinos("A " + Game.falling.piece.name, coords, [x, y]);
+            Game.falling.location = [x, y];
+            if (Game.pixi && typeof Game.pixi.setRotationCenterPos === 'function') {
+                Game.pixi.setRotationCenterPos([x, y], Game.falling.piece.name);
             }
-            
-            // 3) Hard drop to place the piece
-            Game.movement.harddrop();
-            
-        } catch (error) {
-            console.error('Error executing move:', error);
+
+            // 4) Hard drop to lock using standard engine logic
+            if (Game.movement && typeof Game.movement.harddrop === 'function') {
+                Game.movement.harddrop();
+            }
+        } catch (err) {
+            console.error('directPlaceAndDrop error:', err);
+            this.stopBot();
         }
     }
 
