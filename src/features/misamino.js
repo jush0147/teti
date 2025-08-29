@@ -224,6 +224,36 @@ export class MisaMinoBot {
         return null;
     }
 
+    // Convert TBP coordinates to TETI coordinates
+    convertTBPToTETICoordinates(tbpX, tbpY) {
+        // Both systems use bottom-left origin with y increasing upward
+        // But let's add some debugging and potential adjustments
+        
+        // Debug: log the conversion
+        console.log(`TBP coordinates: (${tbpX}, ${tbpY})`);
+        
+        // For now, assume they're the same coordinate system
+        // But we can add adjustments here if needed
+        let tetiX = tbpX;
+        let tetiY = tbpY;
+        
+        // Validate coordinates are within bounds
+        if (tetiX < 0 || tetiX >= 10) {
+            console.warn(`X coordinate ${tetiX} out of bounds, clamping to [0, 9]`);
+            tetiX = Math.max(0, Math.min(9, tetiX));
+        }
+        
+        if (tetiY < 0 || tetiY >= 40) {
+            console.warn(`Y coordinate ${tetiY} out of bounds, clamping to [0, 39]`);
+            tetiY = Math.max(0, Math.min(39, tetiY));
+        }
+        
+        console.log(`Converted to TETI: (${tetiX}, ${tetiY})`);
+        console.log(`Current piece position: [${Game.falling.location[0]}, ${Game.falling.location[1]}]`);
+        
+        return [tetiX, tetiY];
+    }
+
     getQueueArray() {
         const queue = [];
         
@@ -298,6 +328,9 @@ export class MisaMinoBot {
             const { location, spin } = move;
             const { x, y, orientation, type } = location;
             
+            // Convert TBP coordinates to TETI coordinates
+            const [tetiX, tetiY] = this.convertTBPToTETICoordinates(x, y);
+            
             // Convert orientation to TETI format
             let targetRotation = 0;
             switch (orientation) {
@@ -308,7 +341,7 @@ export class MisaMinoBot {
             }
             
             // Directly set piece position and rotation, then hard drop
-            this.setPiecePosition(x, y, targetRotation, spin);
+            this.setPiecePosition(tetiX, tetiY, targetRotation, spin);
             
         } catch (error) {
             console.error('Error executing move:', error);
