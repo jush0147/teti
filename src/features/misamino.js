@@ -99,7 +99,10 @@ export class MisaMinoBot {
             Game.modals.generate.notif("MisaMino", "Custom mode only", "error");
             return;
         }
-        if (Game.ended) return;
+        if (Game.ended) {
+            Game.modals.generate.notif("MisaMino", "Game has ended", "error");
+            return;
+        }
 
         this.singleRun = true;
         this.isActive = true;
@@ -256,14 +259,14 @@ export class MisaMinoBot {
     }
 
     executeMoves() {
-        if (!this.isActive || this.currentMoves.length === 0) return;
+        if (!this.isActive || this.currentMoves.length === 0 || Game.ended) return;
         
         if (this.autoPlayInterval) {
             clearInterval(this.autoPlayInterval);
         }
         
         this.autoPlayInterval = setInterval(() => {
-            if (this.moveIndex >= this.currentMoves.length || !this.isActive) {
+            if (this.moveIndex >= this.currentMoves.length || !this.isActive || Game.ended) {
                 clearInterval(this.autoPlayInterval);
                 this.autoPlayInterval = null;
                 
@@ -313,27 +316,37 @@ export class MisaMinoBot {
     }
 
     setPiecePosition(targetX, targetY, targetRotation, spin) {
-        if (!Game.falling.piece || !this.isActive) return;
+        if (!Game.falling.piece || !this.isActive || Game.ended) return;
         
-        // Remove current piece from board
-        Game.board.MinoToNone("A");
-        Game.board.MinoToNone("Sh");
-        
-        // Set piece rotation
-        Game.falling.rotation = targetRotation;
-        
-        // Set piece position
-        Game.falling.location = [targetX, targetY];
-        
-        // Add piece to board at new position
-        const coords = Game.board.pieceToCoords(Game.falling.piece[`shape${targetRotation}`]);
-        Game.board.addMinos("A " + Game.falling.piece.name, coords, [targetX, targetY]);
-        
-        // Update PIXI rotation center
-        Game.pixi.setRotationCenterPos([targetX, targetY], Game.falling.piece.name);
-        
-        // Hard drop to lock the piece
-        Game.movement.harddrop();
+        try {
+            // Remove current piece from board
+            Game.board.MinoToNone("A");
+            Game.board.MinoToNone("Sh");
+            
+            // Set piece rotation
+            Game.falling.rotation = targetRotation;
+            
+            // Set piece position
+            Game.falling.location = [targetX, targetY];
+            
+            // Add piece to board at new position
+            const coords = Game.board.pieceToCoords(Game.falling.piece[`shape${targetRotation}`]);
+            Game.board.addMinos("A " + Game.falling.piece.name, coords, [targetX, targetY]);
+            
+            // Update PIXI rotation center (with safety check)
+            if (Game.pixi && typeof Game.pixi.setRotationCenterPos === 'function') {
+                Game.pixi.setRotationCenterPos([targetX, targetY], Game.falling.piece.name);
+            }
+            
+            // Hard drop to lock the piece
+            if (Game.movement && typeof Game.movement.harddrop === 'function') {
+                Game.movement.harddrop();
+            }
+        } catch (error) {
+            console.error('Error in setPiecePosition:', error);
+            // Stop bot if there's an error
+            this.stopBot();
+        }
     }
 
     // Called when game state changes (new piece, line clear, etc.)
