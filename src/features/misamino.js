@@ -328,8 +328,8 @@ export class MisaMinoBot {
             const { location, spin } = move;
             const { x, y, orientation, type } = location;
             
-            // Convert TBP coordinates to TETI coordinates
-            const [tetiX, tetiY] = this.convertTBPToTETICoordinates(x, y);
+            // Convert TBP coordinates to TETI coordinates (use X; ignore Y to avoid anchor mismatch)
+            const [tetiX /*, tetiY*/] = this.convertTBPToTETICoordinates(x, y);
             
             // Convert orientation to TETI format
             let targetRotation = 0;
@@ -340,8 +340,24 @@ export class MisaMinoBot {
                 case 'west': targetRotation = 3; break;
             }
             
-            // Directly set piece position and rotation, then hard drop
-            this.setPiecePosition(tetiX, tetiY, targetRotation, spin);
+            // 1) Rotate first using engine (respects kicks and piece centers)
+            const currentRot = Game.falling.rotation;
+            const diff = (targetRotation - currentRot + 4) % 4;
+            if (diff === 1) Game.movement.rotate("CW");
+            else if (diff === 2) Game.movement.rotate("180");
+            else if (diff === 3) Game.movement.rotate("CCW");
+            
+            // 2) Move horizontally to align leftmost mino with target X
+            const coords = Game.board.getMinos("A");
+            if (coords.length) {
+                const currentLeft = Math.min(...coords.map(([cx]) => cx));
+                const dx = tetiX - currentLeft;
+                if (dx > 0) Game.movement.movePieceSide("RIGHT", dx);
+                else if (dx < 0) Game.movement.movePieceSide("LEFT", -dx);
+            }
+            
+            // 3) Hard drop to place the piece
+            Game.movement.harddrop();
             
         } catch (error) {
             console.error('Error executing move:', error);
