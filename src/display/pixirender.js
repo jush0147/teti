@@ -308,7 +308,9 @@ export class PixiRender {
         array.forEach((row, y) => {
             row.forEach((col, x) => {
                 const cell = col.split(" ");
-                const sprite = shadowArray[y][x];
+                const spriteRow = shadowArray && shadowArray[y];
+                const sprite = spriteRow && spriteRow[x];
+                if (!sprite) return; // safety: sprite grid not ready or mismatched
                 sprite.visible = false;
                 sprite.tint = undefined;
                 if (cell.includes("A") || cell.includes("S")) { // active or stopped piece
