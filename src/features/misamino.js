@@ -258,21 +258,34 @@ export class MisaMinoBot {
     executeMoves() {
         if (!this.isActive || this.currentMoves.length === 0) return;
 
-        const move = this.currentMoves[0];
-        this.executeMove(move);
-
-        // After executing the move, we need to request a new suggestion.
-        if (this.isActive && !Game.ended && !this.singleRun) {
-            setTimeout(() => {
-                this.sendGameState();
-                this.requestSuggestion();
-            }, 100);
-        } else if (this.singleRun) {
-            // reset flags so next click will run once again
-            this.singleRun = false;
-            this.isActive = false;
-            this.stopBot();
+        if (this.autoPlayInterval) {
+            clearInterval(this.autoPlayInterval);
         }
+
+        this.autoPlayInterval = setInterval(() => {
+            if (this.moveIndex >= this.currentMoves.length || !this.isActive) {
+                clearInterval(this.autoPlayInterval);
+                this.autoPlayInterval = null;
+
+                // In loop mode, request next suggestion. In singleRun, stop.
+                if (this.isActive && !Game.ended && !this.singleRun) {
+                    setTimeout(() => {
+                        this.sendGameState();
+                        this.requestSuggestion();
+                    }, 100);
+                } else if (this.singleRun) {
+                    // reset flags so next click will run once again
+                    this.singleRun = false;
+                    this.isActive = false;
+                    this.stopBot();
+                }
+                return;
+            }
+
+            const move = this.currentMoves[this.moveIndex];
+            this.executeMove(move);
+            this.moveIndex++;
+        }, this.autoPlayDelay);
     }
 
     executeMove(move) {
@@ -286,43 +299,64 @@ export class MisaMinoBot {
             let targetRotation = 0;
             switch (orientation) {
                 case 'north': targetRotation = 0; break;
-                case 'east': targetRotation = 1; break;
+                case 'east':  targetRotation = 1; break;
                 case 'south': targetRotation = 2; break;
-                case 'west': targetRotation = 3; break;
+                case 'west':  targetRotation = 3; break;
             }
 
-            // Execute the move by simulating key presses
-            this.simulateMovement(x, y, targetRotation, spin, type);
+            // 直接定位版本：不呼叫水平/垂直/旋轉的逐步移動 API
+            this.directPlaceMovement(x, y, targetRotation, spin, type);
 
         } catch (error) {
             console.error('Error executing move:', error);
         }
     }
 
-    simulateMovement(targetX, targetY, targetRotation, spin, targetType) {
+    /**
+     * 直接定位：
+     * 1) 若回傳方塊與當前不同 → 先 hold
+     * 2) 直接設定 rotation
+     * 3) 直接設定 x,y
+     * 4) 硬降（harddrop）
+     */
+    directPlaceMovement(targetX, targetY, targetRotation, spin, targetType) {
         if (!this.isActive || !Game.falling?.piece) return;
 
-        // Hold if necessary
+        // 1) 若回傳的方塊與當前不同，先 hold 一次
         const currentPieceName = Game.falling.piece.name?.toUpperCase?.() || null;
         const desiredType = targetType?.toUpperCase?.() || null;
         if (desiredType && currentPieceName && desiredType !== currentPieceName) {
-            if (typeof Game.hold?.swapHold === 'function') {
-                Game.hold.swapHold();
+            if (typeof Game.movement?.hold === 'function') {
+                Game.movement.hold();
+            } else {
+                console.warn('Hold function not available on Game.movement; skipping hold.');
             }
         }
 
+        // 2) 重新讀取當前方塊（hold 後會更換）
         if (!this.isActive || !Game.falling?.piece) return;
 
-        // Rotate
-        const rotationDiff = (targetRotation - Game.falling.rotation + 4) % 4;
-        for (let i = 0; i < rotationDiff; i++) {
-            Game.movement.rotate("CW");
+        // 3) 直接設定旋轉（避免呼叫 rotate API）
+        Game.falling.rotation = targetRotation;
+
+        // 4) 直接設定座標（避免呼叫水平/垂直移動 API）
+        // 注意：此動作可能繞過碰撞/邊界檢查，若需嚴謹請先驗證。
+        Game.falling.location = [targetX, targetY];
+
+        // 可選：若引擎需要重算方塊/碰撞快取，則呼叫更新鉤子（若存在）
+        if (typeof Game.falling.update === 'function') {
+            try { Game.falling.update(); } catch (e) {}
+        }
+        if (typeof Game.board?.update === 'function') {
+            try { Game.board.update(); } catch (e) {}
         }
 
-        // Direct placement
-        Game.falling.location = [targetX, Game.falling.location[1]];
+        // 5)（可選）spin 額外處理點，可在此補充自訂踢牆行為
+        if (spin && spin !== 'none') {
+            // 依需求擴充
+        }
 
-        // Hard drop
+        // 6) 硬降完成放置
         Game.movement.harddrop();
     }
 
