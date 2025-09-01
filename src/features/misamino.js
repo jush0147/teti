@@ -307,12 +307,12 @@ export class MisaMinoBot {
             // Check if the bot's suggested piece type is different from current piece
             const currentPieceType = Game.falling.piece ? Game.falling.piece.name.toUpperCase() : null;
             const suggestedPieceType = type ? type.toUpperCase() : currentPieceType;
-            
+
             // If piece types are different, execute hold first
             if (suggestedPieceType && currentPieceType && suggestedPieceType !== currentPieceType) {
                 // Execute hold to get the correct piece
                 Game.mechanics.switchHold();
-                
+
                 // Wait a bit for the hold to complete before proceeding
                 setTimeout(() => {
                     this.executePiecePlacement(x, y, targetRotation, spin);
@@ -331,8 +331,6 @@ export class MisaMinoBot {
         if (!Game.falling.piece || !this.isActive) return;
 
         // Get current piece position and rotation
-        const currentX = Game.falling.location[0];
-        const currentY = Game.falling.location[1];
         const currentRotation = Game.falling.rotation;
 
         // Rotate to target orientation
@@ -342,18 +340,8 @@ export class MisaMinoBot {
         }
 
         // Move piece to target X position
-        const xDiff = targetX - currentX;
-        if (xDiff > 0) {
-            // Move right
-            for (let i = 0; i < xDiff; i++) {
-                Game.movement.movePieceSide("RIGHT");
-            }
-        } else if (xDiff < 0) {
-            // Move left
-            for (let i = 0; i < Math.abs(xDiff); i++) {
-                Game.movement.movePieceSide("LEFT");
-            }
-        }
+        Game.falling.location = [targetX, targetY];
+        Game.pixi.setRotationCenterPos(Game.falling.location, Game.falling.piece.name);
 
         // Handle spin moves (T-spins, etc.)
         if (spin && spin !== 'none') {
@@ -364,8 +352,6 @@ export class MisaMinoBot {
         // Execute hard drop to place the piece
         Game.movement.harddrop();
     }
-
-
 
     // Called when game state changes (new piece, line clear, etc.)
     onGameStateChange() {
