@@ -15,7 +15,7 @@ export class MisaMinoBot {
 
     async init() {
         if (this.isInitialized) return;
-        
+
         try {
             // Use relative path that works both locally and on GitHub Pages
             const workerPath = new URL('./assets/misamino/misaImport.js', window.location.origin + window.location.pathname.replace(/[^/]*$/, ''));
@@ -25,7 +25,7 @@ export class MisaMinoBot {
                 console.error('MisaMino Worker Error:', error);
                 Game.modals.generate.notif("MisaMino Error", "Failed to initialize bot", "error");
             };
-            
+
             this.isInitialized = true;
             console.log('MisaMino bot initialized successfully');
         } catch (error) {
@@ -69,13 +69,13 @@ export class MisaMinoBot {
         }
 
         this.isActive = !this.isActive;
-        
+
         if (this.isActive) {
             this.startBot();
         } else {
             this.stopBot();
         }
-        
+
         // Update UI toggle state
         const toggleButton = document.getElementById('misamino-toggle');
         if (toggleButton) {
@@ -85,7 +85,7 @@ export class MisaMinoBot {
             }
             toggleButton.classList.toggle('active', this.isActive);
         }
-        
+
         Game.modals.generate.notif("MisaMino", this.isActive ? "Bot enabled" : "Bot disabled", "info");
     }
 
@@ -119,7 +119,7 @@ export class MisaMinoBot {
 
     startBot() {
         if (!this.worker || Game.ended) return;
-        
+
         // Send initial game state
         this.sendGameState();
         this.requestSuggestion();
@@ -130,11 +130,11 @@ export class MisaMinoBot {
             clearInterval(this.autoPlayInterval);
             this.autoPlayInterval = null;
         }
-        
+
         this.currentMoves = [];
         this.moveIndex = 0;
         this.pendingSuggestion = false;
-        
+
         if (this.worker) {
             this.worker.postMessage({ type: "stop" });
         }
@@ -146,7 +146,7 @@ export class MisaMinoBot {
         const board = this.convertBoardToTBPFormat();
         const queue = this.getQueueArray();
         const hold = this.getHoldPiece();
-        
+
         const gameState = {
             type: "start",
             hold: hold,
@@ -155,20 +155,20 @@ export class MisaMinoBot {
             back_to_back: Game.stats.btb > 0,
             board: board
         };
-        
+
         this.worker.postMessage(gameState);
     }
 
     requestSuggestion() {
         if (!this.worker || !this.isActive || this.pendingSuggestion) return;
-        
+
         this.pendingSuggestion = true;
         this.worker.postMessage({ type: "suggest" });
     }
 
     convertBoardToTBPFormat() {
         const board = [];
-        
+
         // TBP format expects 40 rows, 10 columns (bottom to top)
         // TETI board is indexed from bottom to top as well
         for (let y = 0; y < 40; y++) {
@@ -201,7 +201,7 @@ export class MisaMinoBot {
             }
             board.push(row);
         }
-        
+
         return board;
     }
 
@@ -211,24 +211,24 @@ export class MisaMinoBot {
             'I': 'I', 'O': 'O', 'T': 'T', 'S': 'S', 'Z': 'Z', 'J': 'J', 'L': 'L',
             'i': 'I', 'o': 'O', 't': 'T', 's': 'S', 'z': 'Z', 'j': 'J', 'l': 'L'
         };
-        
+
         if (typeof tetiPiece === 'string') {
             return pieceMap[tetiPiece] || tetiPiece.toUpperCase();
         } else if (tetiPiece && tetiPiece.type) {
             return pieceMap[tetiPiece.type] || tetiPiece.type.toUpperCase();
         }
-        
+
         return null;
     }
 
     getQueueArray() {
         const queue = [];
-        
+
         // Get current piece
         if (Game.falling.piece && Game.falling.piece.name) {
             queue.push(Game.falling.piece.name.toUpperCase());
         }
-        
+
         // Get next pieces from bag
         if (Game.bag && Game.bag.getFirstN) {
             const nextPieces = Game.bag.getFirstN(6);
@@ -238,13 +238,13 @@ export class MisaMinoBot {
                 }
             });
         }
-        
+
         // Ensure we have at least 6 pieces
         const pieceTypes = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
         while (queue.length < 6) {
             queue.push(pieceTypes[Math.floor(Math.random() * pieceTypes.length)]);
         }
-        
+
         return queue.slice(0, 6); // Limit to 6 pieces
     }
 
@@ -257,16 +257,16 @@ export class MisaMinoBot {
 
     executeMoves() {
         if (!this.isActive || this.currentMoves.length === 0) return;
-        
+
         if (this.autoPlayInterval) {
             clearInterval(this.autoPlayInterval);
         }
-        
+
         this.autoPlayInterval = setInterval(() => {
             if (this.moveIndex >= this.currentMoves.length || !this.isActive) {
                 clearInterval(this.autoPlayInterval);
                 this.autoPlayInterval = null;
-                
+
                 // In loop mode, request next suggestion. In singleRun, stop.
                 if (this.isActive && !Game.ended && !this.singleRun) {
                     setTimeout(() => {
@@ -281,7 +281,7 @@ export class MisaMinoBot {
                 }
                 return;
             }
-            
+
             const move = this.currentMoves[this.moveIndex];
             this.executeMove(move);
             this.moveIndex++;
@@ -290,11 +290,11 @@ export class MisaMinoBot {
 
     executeMove(move) {
         if (!move || !move.location) return;
-        
+
         try {
             const { location, spin } = move;
             const { x, y, orientation, type } = location;
-            
+
             // Convert orientation to TETI format
             let targetRotation = 0;
             switch (orientation) {
@@ -303,10 +303,10 @@ export class MisaMinoBot {
                 case 'south': targetRotation = 2; break;
                 case 'west': targetRotation = 3; break;
             }
-            
+
             // Execute the move by simulating key presses
             this.simulateMovement(x, y, targetRotation, spin);
-            
+
         } catch (error) {
             console.error('Error executing move:', error);
         }
@@ -314,36 +314,28 @@ export class MisaMinoBot {
 
     simulateMovement(targetX, targetY, targetRotation, spin) {
         if (!Game.falling.piece || !this.isActive) return;
-        
+
         // Get current piece position
         const currentX = Game.falling.location[0];
         const currentY = Game.falling.location[1];
         const currentRotation = Game.falling.rotation;
-        
+
         // Rotate to target orientation
         const rotationDiff = (targetRotation - currentRotation + 4) % 4;
         for (let i = 0; i < rotationDiff; i++) {
             Game.movement.rotate("CW"); // Rotate clockwise
         }
-        
-        // Move horizontally
-        const horizontalDiff = targetX - currentX;
-        if (horizontalDiff > 0) {
-            for (let i = 0; i < horizontalDiff; i++) {
-                Game.movement.movePieceSide("RIGHT", 1);
-            }
-        } else if (horizontalDiff < 0) {
-            for (let i = 0; i < Math.abs(horizontalDiff); i++) {
-                Game.movement.movePieceSide("LEFT", 1);
-            }
-        }
-        
+
+        // Directly set the piece location and update rotation center
+        Game.falling.location = [targetX, targetY];
+        Game.pixi.setRotationCenterPos(Game.falling.location, Game.falling.piece.name);
+
         // Handle spin moves (T-spins, etc.)
         if (spin && spin !== 'none') {
             // Additional rotation for spins might be needed
             // This depends on the specific implementation
         }
-        
+
         // Drop the piece
         Game.movement.harddrop();
     }
