@@ -258,34 +258,21 @@ export class MisaMinoBot {
     executeMoves() {
         if (!this.isActive || this.currentMoves.length === 0) return;
 
-        if (this.autoPlayInterval) {
-            clearInterval(this.autoPlayInterval);
+        const move = this.currentMoves[0];
+        this.executeMove(move);
+
+        // After executing the move, we need to request a new suggestion.
+        if (this.isActive && !Game.ended && !this.singleRun) {
+            setTimeout(() => {
+                this.sendGameState();
+                this.requestSuggestion();
+            }, 100);
+        } else if (this.singleRun) {
+            // reset flags so next click will run once again
+            this.singleRun = false;
+            this.isActive = false;
+            this.stopBot();
         }
-
-        this.autoPlayInterval = setInterval(() => {
-            if (this.moveIndex >= this.currentMoves.length || !this.isActive) {
-                clearInterval(this.autoPlayInterval);
-                this.autoPlayInterval = null;
-
-                // In loop mode, request next suggestion. In singleRun, stop.
-                if (this.isActive && !Game.ended && !this.singleRun) {
-                    setTimeout(() => {
-                        this.sendGameState();
-                        this.requestSuggestion();
-                    }, 100);
-                } else if (this.singleRun) {
-                    // reset flags so next click will run once again
-                    this.singleRun = false;
-                    this.isActive = false;
-                    this.stopBot();
-                }
-                return;
-            }
-
-            const move = this.currentMoves[this.moveIndex];
-            this.executeMove(move);
-            this.moveIndex++;
-        }, this.autoPlayDelay);
     }
 
     executeMove(move) {
