@@ -11,21 +11,11 @@ export class MisaMinoBot {
         this.autoPlayInterval = null;
         this.autoPlayDelay = 500; // 500ms between moves
         this.singleRun = false;
-        this.needs_hold = false;
-        this.controller = {
-            left: false,
-            right: false,
-            cw: false,
-            ccw: false,
-            hold: false,
-            soft_drop: false,
-            hard_drop: false,
-        };
     }
 
     async init() {
         if (this.isInitialized) return;
-        
+
         try {
             // Use relative path that works both locally and on GitHub Pages
             const workerPath = new URL('./assets/misamino/misaImport.js', window.location.origin + window.location.pathname.replace(/[^/]*$/, ''));
@@ -35,7 +25,7 @@ export class MisaMinoBot {
                 console.error('MisaMino Worker Error:', error);
                 Game.modals.generate.notif("MisaMino Error", "Failed to initialize bot", "error");
             };
-            
+
             this.isInitialized = true;
             console.log('MisaMino bot initialized successfully');
         } catch (error) {
@@ -79,13 +69,13 @@ export class MisaMinoBot {
         }
 
         this.isActive = !this.isActive;
-        
+
         if (this.isActive) {
             this.startBot();
         } else {
             this.stopBot();
         }
-        
+
         // Update UI toggle state
         const toggleButton = document.getElementById('misamino-toggle');
         if (toggleButton) {
@@ -95,7 +85,7 @@ export class MisaMinoBot {
             }
             toggleButton.classList.toggle('active', this.isActive);
         }
-        
+
         Game.modals.generate.notif("MisaMino", this.isActive ? "Bot enabled" : "Bot disabled", "info");
     }
 
@@ -129,7 +119,7 @@ export class MisaMinoBot {
 
     startBot() {
         if (!this.worker || Game.ended) return;
-        
+
         // Send initial game state
         this.sendGameState();
         this.requestSuggestion();
@@ -140,11 +130,11 @@ export class MisaMinoBot {
             clearInterval(this.autoPlayInterval);
             this.autoPlayInterval = null;
         }
-        
+
         this.currentMoves = [];
         this.moveIndex = 0;
         this.pendingSuggestion = false;
-        
+
         if (this.worker) {
             this.worker.postMessage({ type: "stop" });
         }
@@ -156,7 +146,7 @@ export class MisaMinoBot {
         const board = this.convertBoardToTBPFormat();
         const queue = this.getQueueArray();
         const hold = this.getHoldPiece();
-        
+
         const gameState = {
             type: "start",
             hold: hold,
@@ -165,20 +155,20 @@ export class MisaMinoBot {
             back_to_back: Game.stats.btb > 0,
             board: board
         };
-        
+
         this.worker.postMessage(gameState);
     }
 
     requestSuggestion() {
         if (!this.worker || !this.isActive || this.pendingSuggestion) return;
-        
+
         this.pendingSuggestion = true;
         this.worker.postMessage({ type: "suggest" });
     }
 
     convertBoardToTBPFormat() {
         const board = [];
-        
+
         // TBP format expects 40 rows, 10 columns (bottom to top)
         // TETI board is indexed from bottom to top as well
         for (let y = 0; y < 40; y++) {
@@ -211,7 +201,7 @@ export class MisaMinoBot {
             }
             board.push(row);
         }
-        
+
         return board;
     }
 
@@ -221,24 +211,24 @@ export class MisaMinoBot {
             'I': 'I', 'O': 'O', 'T': 'T', 'S': 'S', 'Z': 'Z', 'J': 'J', 'L': 'L',
             'i': 'I', 'o': 'O', 't': 'T', 's': 'S', 'z': 'Z', 'j': 'J', 'l': 'L'
         };
-        
+
         if (typeof tetiPiece === 'string') {
             return pieceMap[tetiPiece] || tetiPiece.toUpperCase();
         } else if (tetiPiece && tetiPiece.type) {
             return pieceMap[tetiPiece.type] || tetiPiece.type.toUpperCase();
         }
-        
+
         return null;
     }
 
     getQueueArray() {
         const queue = [];
-        
+
         // Get current piece
         if (Game.falling.piece && Game.falling.piece.name) {
             queue.push(Game.falling.piece.name.toUpperCase());
         }
-        
+
         // Get next pieces from bag
         if (Game.bag && Game.bag.getFirstN) {
             const nextPieces = Game.bag.getFirstN(6);
@@ -248,13 +238,13 @@ export class MisaMinoBot {
                 }
             });
         }
-        
+
         // Ensure we have at least 6 pieces
         const pieceTypes = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
         while (queue.length < 6) {
             queue.push(pieceTypes[Math.floor(Math.random() * pieceTypes.length)]);
         }
-        
+
         return queue.slice(0, 6); // Limit to 6 pieces
     }
 
@@ -272,141 +262,102 @@ export class MisaMinoBot {
             clearInterval(this.autoPlayInterval);
         }
 
-        const move = this.currentMoves[0];
-        if (!move || !move.location || !Game.falling.piece) return;
-
-        const { location, spin } = move;
-        const { x, y, orientation, type } = location;
-
-        if (Game.falling.piece.name.toLowerCase() !== type.toLowerCase()) {
-            this.needs_hold = true;
-        }
-
-        let targetRotation = 0;
-        switch (orientation) {
-            case 'north': targetRotation = 0; break;
-            case 'east': targetRotation = 1; break;
-            case 'south': targetRotation = 2; break;
-            case 'west': targetRotation = 3; break;
-        }
-
-        const inputs = this.translateMoveToInputs(x, y, targetRotation, spin);
-        this.processInputs(inputs);
-    }
-
-    processInputs(inputs) {
-        if (!this.isActive || inputs.length === 0) return;
-
-        let inputIndex = 0;
         this.autoPlayInterval = setInterval(() => {
-            if (this.needs_hold) {
-                this.controller.hold = true;
-                this.needs_hold = false;
-            } else {
-                this.controller.hold = false;
-                const input = inputs[inputIndex];
-                if (input) {
-                    if (this.controller.soft_drop && Game.falling.piece.isLanded) {
-                        this.controller.soft_drop = false;
-                        inputIndex++;
-                    }
-                    this.updateController(inputs[inputIndex]);
-                } else {
-                    this.controller.hard_drop = true;
-                }
-            }
-
-            this.applyController();
-
-            if (inputIndex >= inputs.length && !this.needs_hold) {
+            if (this.moveIndex >= this.currentMoves.length || !this.isActive) {
                 clearInterval(this.autoPlayInterval);
                 this.autoPlayInterval = null;
 
+                // In loop mode, request next suggestion. In singleRun, stop.
                 if (this.isActive && !Game.ended && !this.singleRun) {
                     setTimeout(() => {
                         this.sendGameState();
                         this.requestSuggestion();
                     }, 100);
                 } else if (this.singleRun) {
+                    // reset flags so next click will run once again
                     this.singleRun = false;
                     this.isActive = false;
                     this.stopBot();
                 }
+                return;
             }
-        }, 50); // 50ms between inputs
+
+            const move = this.currentMoves[this.moveIndex];
+            this.executeMove(move);
+            this.moveIndex++;
+        }, this.autoPlayDelay);
     }
 
-    updateController(input) {
-        // Reset all flags except soft_drop
-        for (const key in this.controller) {
-            if (key !== 'soft_drop') {
-                this.controller[key] = false;
-            }
-        }
+    executeMove(move) {
+        if (!move || !move.location) return;
 
-        switch (input) {
-            case 'left':
-                this.controller.left = !this.controller.left;
-                break;
-            case 'right':
-                this.controller.right = !this.controller.right;
-                break;
-            case 'cw':
-                this.controller.cw = !this.controller.cw;
-                break;
-            case 'ccw':
-                this.controller.ccw = !this.controller.ccw;
-                break;
-            case 'harddrop':
-                this.controller.hard_drop = true;
-                break;
-            case 'sonicdrop':
-                this.controller.soft_drop = true;
-                break;
+        try {
+            const { location, spin } = move;
+            const { x, y, orientation, type } = location;
+
+            // Convert orientation to TETI format
+            let targetRotation = 0;
+            switch (orientation) {
+                case 'north': targetRotation = 0; break;
+                case 'east':  targetRotation = 1; break;
+                case 'south': targetRotation = 2; break;
+                case 'west':  targetRotation = 3; break;
+            }
+
+            // 直接定位版本：不呼叫水平/垂直/旋轉的逐步移動 API
+            this.directPlaceMovement(x, y, targetRotation, spin, type);
+
+        } catch (error) {
+            console.error('Error executing move:', error);
         }
     }
 
-    applyController() {
-        if (!this.isActive) return;
+    /**
+     * 直接定位：
+     * 1) 若回傳方塊與當前不同 → 先 hold
+     * 2) 直接設定 rotation
+     * 3) 直接設定 x,y
+     * 4) 硬降（harddrop）
+     */
+    directPlaceMovement(targetX, targetY, targetRotation, spin, targetType) {
+        if (!this.isActive || !Game.falling?.piece) return;
 
-        if (this.controller.left) Game.movement.movePieceSide("LEFT", 1);
-        if (this.controller.right) Game.movement.movePieceSide("RIGHT", 1);
-        if (this.controller.cw) Game.movement.rotate("CW");
-        if (this.controller.ccw) Game.movement.rotate("CCW");
-        if (this.controller.hold) Game.hold.swapHold();
-        if (this.controller.soft_drop) Game.movement.movePieceDown();
-        if (this.controller.hard_drop) Game.movement.harddrop();
-    }
-
-    translateMoveToInputs(targetX, targetY, targetRotation, spin) {
-        if (!Game.falling.piece) return [];
-
-        const inputs = [];
-        const currentX = Game.falling.location[0];
-        const currentRotation = Game.falling.rotation;
-
-        // Rotation
-        const rotationDiff = (targetRotation - currentRotation + 4) % 4;
-        for (let i = 0; i < rotationDiff; i++) {
-            inputs.push('cw');
-        }
-
-        // Horizontal movement
-        const horizontalDiff = targetX - currentX;
-        if (horizontalDiff > 0) {
-            for (let i = 0; i < horizontalDiff; i++) {
-                inputs.push('right');
-            }
-        } else if (horizontalDiff < 0) {
-            for (let i = 0; i < Math.abs(horizontalDiff); i++) {
-                inputs.push('left');
+        // 1) 若回傳的方塊與當前不同，先 hold 一次
+        const currentPieceName = Game.falling.piece.name?.toUpperCase?.() || null;
+        const desiredType = targetType?.toUpperCase?.() || null;
+        if (desiredType && currentPieceName && desiredType !== currentPieceName) {
+            if (typeof Game.movement?.hold === 'function') {
+                Game.movement.hold();
+            } else {
+                console.warn('Hold function not available on Game.movement; skipping hold.');
             }
         }
 
-        // Drop
-        inputs.push('sonicdrop');
+        // 2) 重新讀取當前方塊（hold 後會更換）
+        if (!this.isActive || !Game.falling?.piece) return;
 
-        return inputs;
+        // 3) 直接設定旋轉（避免呼叫 rotate API）
+        Game.falling.rotation = targetRotation;
+
+        // 4) 直接設定座標（避免呼叫水平/垂直移動 API）
+        // 注意：此動作可能繞過碰撞/邊界檢查，若需嚴謹請先驗證。
+        Game.falling.location = [targetX, targetY];
+
+        // 可選：若引擎需要重算方塊/碰撞快取，則呼叫更新鉤子（若存在）
+        if (typeof Game.falling.update === 'function') {
+            try { Game.falling.update(); } catch (e) {}
+        }
+        if (typeof Game.board?.update === 'function') {
+            try { Game.board.update(); } catch (e) {}
+        }
+
+        // 5)（可選）spin 額外處理點，可在此補充自訂踢牆行為
+        if (spin && spin !== 'none') {
+            // 依需求擴充
+        }
+
+        // 6) 硬降完成放置
+        Game.movement.harddrop();
     }
 
     // Called when game state changes (new piece, line clear, etc.)
