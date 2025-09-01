@@ -273,7 +273,7 @@ export class MisaMinoBot {
         }
 
         const move = this.currentMoves[0];
-        if (!move || !move.location) return;
+        if (!move || !move.location || !Game.falling.piece) return;
 
         const { location, spin } = move;
         const { x, y, orientation, type } = location;
