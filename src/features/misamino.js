@@ -319,31 +319,32 @@ export class MisaMinoBot {
      * 3) 直接設定 x,y
      * 4) 硬降（harddrop）
      */
+    // 將 directPlaceMovement 改為支援延幀放置
     directPlaceMovement(targetX, targetY, targetRotation, spin, targetType) {
         if (!this.isActive || !Game.falling?.piece) return;
 
-        // 1) 若回傳的方塊與當前不同，先 hold 一次
+        // 1) 回傳方塊與當前不同 → 先 hold
         const currentPieceName = Game.falling.piece.name?.toUpperCase?.() || null;
         const desiredType = targetType?.toUpperCase?.() || null;
         if (desiredType && currentPieceName && desiredType !== currentPieceName) {
             if (typeof Game.movement?.hold === 'function') {
                 Game.movement.hold();
-            } else {
-                console.warn('Hold function not available on Game.movement; skipping hold.');
             }
         }
 
-        // 2) 重新讀取當前方塊（hold 後會更換）
+        // 2) 重新抓取 falling（hold 後會刷新）
         if (!this.isActive || !Game.falling?.piece) return;
 
-        // 3) 直接設定旋轉（避免呼叫 rotate API）
+        // 3) 設定旋轉與座標（直接寫入或使用 setter）
+        // 若有官方 setter，優先使用：
+        // if (Game.falling.setRotation) Game.falling.setRotation(targetRotation);
+        // else
         Game.falling.rotation = targetRotation;
-
-        // 4) 直接設定座標（避免呼叫水平/垂直移動 API）
-        // 注意：此動作可能繞過碰撞/邊界檢查，若需嚴謹請先驗證。
+        // if (Game.falling.setLocation) Game.falling.setLocation(targetX, targetY);
+        // else
         Game.falling.location = [targetX, targetY];
 
-        // 可選：若引擎需要重算方塊/碰撞快取，則呼叫更新鉤子（若存在）
+        // 4) 嘗試同步（若有）
         if (typeof Game.falling.update === 'function') {
             try { Game.falling.update(); } catch (e) {}
         }
@@ -351,13 +352,14 @@ export class MisaMinoBot {
             try { Game.board.update(); } catch (e) {}
         }
 
-        // 5)（可選）spin 額外處理點，可在此補充自訂踢牆行為
-        if (spin && spin !== 'none') {
-            // 依需求擴充
-        }
-
-        // 6) 硬降完成放置
-        Game.movement.harddrop();
+        // 5) 將硬降延後到下一或下一幀，確保上一段寫入不被同幀邏輯覆寫
+        requestAnimationFrame(() => {
+            // 再給一幀更保險（有些引擎在 rAF 之後還有一輪
+            requestAnimationFrame(() => {
+                if (!this.isActive || !Game.falling?.piece) return;
+                Game.movement.harddrop();
+            });
+        });
     }
 
     // Called when game state changes (new piece, line clear, etc.)
