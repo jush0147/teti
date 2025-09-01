@@ -11,6 +11,16 @@ export class MisaMinoBot {
         this.autoPlayInterval = null;
         this.autoPlayDelay = 500; // 500ms between moves
         this.singleRun = false;
+        this.needs_hold = false;
+        this.controller = {
+            left: false,
+            right: false,
+            cw: false,
+            ccw: false,
+            hold: false,
+            soft_drop: false,
+            hard_drop: false,
+        };
     }
 
     async init() {
@@ -268,6 +278,10 @@ export class MisaMinoBot {
         const { location, spin } = move;
         const { x, y, orientation, type } = location;
 
+        if (Game.falling.piece.name.toLowerCase() !== type.toLowerCase()) {
+            this.needs_hold = true;
+        }
+
         let targetRotation = 0;
         switch (orientation) {
             case 'north': targetRotation = 0; break;
@@ -285,7 +299,26 @@ export class MisaMinoBot {
 
         let inputIndex = 0;
         this.autoPlayInterval = setInterval(() => {
-            if (inputIndex >= inputs.length || !this.isActive) {
+            if (this.needs_hold) {
+                this.controller.hold = true;
+                this.needs_hold = false;
+            } else {
+                this.controller.hold = false;
+                const input = inputs[inputIndex];
+                if (input) {
+                    if (this.controller.soft_drop && Game.falling.piece.isLanded) {
+                        this.controller.soft_drop = false;
+                        inputIndex++;
+                    }
+                    this.updateController(inputs[inputIndex]);
+                } else {
+                    this.controller.hard_drop = true;
+                }
+            }
+
+            this.applyController();
+
+            if (inputIndex >= inputs.length && !this.needs_hold) {
                 clearInterval(this.autoPlayInterval);
                 this.autoPlayInterval = null;
 
@@ -299,38 +332,50 @@ export class MisaMinoBot {
                     this.isActive = false;
                     this.stopBot();
                 }
-                return;
             }
-
-            const input = inputs[inputIndex];
-            this.executeInput(input);
-            inputIndex++;
         }, 50); // 50ms between inputs
     }
 
-    executeInput(input) {
-        if (!input || !this.isActive) return;
+    updateController(input) {
+        // Reset all flags except soft_drop
+        for (const key in this.controller) {
+            if (key !== 'soft_drop') {
+                this.controller[key] = false;
+            }
+        }
 
         switch (input) {
             case 'left':
-                Game.movement.movePieceSide("LEFT", 1);
+                this.controller.left = !this.controller.left;
                 break;
             case 'right':
-                Game.movement.movePieceSide("RIGHT", 1);
+                this.controller.right = !this.controller.right;
                 break;
             case 'cw':
-                Game.movement.rotate("CW");
+                this.controller.cw = !this.controller.cw;
                 break;
             case 'ccw':
-                Game.movement.rotate("CCW");
-                break;
-            case 'hold':
-                Game.hold.swap();
+                this.controller.ccw = !this.controller.ccw;
                 break;
             case 'harddrop':
-                Game.movement.harddrop();
+                this.controller.hard_drop = true;
+                break;
+            case 'sonicdrop':
+                this.controller.soft_drop = true;
                 break;
         }
+    }
+
+    applyController() {
+        if (!this.isActive) return;
+
+        if (this.controller.left) Game.movement.movePieceSide("LEFT", 1);
+        if (this.controller.right) Game.movement.movePieceSide("RIGHT", 1);
+        if (this.controller.cw) Game.movement.rotate("CW");
+        if (this.controller.ccw) Game.movement.rotate("CCW");
+        if (this.controller.hold) Game.hold.swap();
+        if (this.controller.soft_drop) Game.movement.movePieceDown();
+        if (this.controller.hard_drop) Game.movement.harddrop();
     }
 
     translateMoveToInputs(targetX, targetY, targetRotation, spin) {
@@ -359,7 +404,7 @@ export class MisaMinoBot {
         }
 
         // Drop
-        inputs.push('harddrop');
+        inputs.push('sonicdrop');
 
         return inputs;
     }
