@@ -258,52 +258,60 @@ export class MisaMinoBot {
     executeMoves() {
         if (!this.isActive || this.currentMoves.length === 0) return;
 
-        // If a move sequence is already running, stop it
         if (this.autoPlayInterval) {
             clearInterval(this.autoPlayInterval);
         }
-        
-        // Start processing the new moves
-        this.autoPlayInterval = setInterval(() => this.processMoveQueue(), 50); // Process a move every 50ms
-    }
 
-    processMoveQueue() {
-        if (!this.isActive || Game.ended) {
-            this.stopBot();
-            return;
+        const move = this.currentMoves[0];
+        if (!move || !move.location) return;
+
+        const { location, spin } = move;
+        const { x, y, orientation, type } = location;
+
+        let targetRotation = 0;
+        switch (orientation) {
+            case 'north': targetRotation = 0; break;
+            case 'east': targetRotation = 1; break;
+            case 'south': targetRotation = 2; break;
+            case 'west': targetRotation = 3; break;
         }
 
-        // Check if there are moves left to execute
-        if (this.moveIndex >= this.currentMoves.length) {
-            clearInterval(this.autoPlayInterval);
-            this.autoPlayInterval = null;
+        const inputs = this.translateMoveToInputs(x, y, targetRotation, spin);
+        this.processInputs(inputs);
+    }
 
-            // If in loop mode, request the next suggestion
-            if (this.isActive && !this.singleRun) {
-                setTimeout(() => {
-                    this.sendGameState();
-                    this.requestSuggestion();
-                }, 100);
-            } else if (this.singleRun) {
-                // Reset for the next single run
-                this.singleRun = false;
-                this.isActive = false;
-                this.stopBot();
+    processInputs(inputs) {
+        if (!this.isActive || inputs.length === 0) return;
+
+        let inputIndex = 0;
+        this.autoPlayInterval = setInterval(() => {
+            if (inputIndex >= inputs.length || !this.isActive) {
+                clearInterval(this.autoPlayInterval);
+                this.autoPlayInterval = null;
+
+                if (this.isActive && !Game.ended && !this.singleRun) {
+                    setTimeout(() => {
+                        this.sendGameState();
+                        this.requestSuggestion();
+                    }, 100);
+                } else if (this.singleRun) {
+                    this.singleRun = false;
+                    this.isActive = false;
+                    this.stopBot();
+                }
+                return;
             }
-            return;
-        }
 
-        // Execute the next move in the queue
-        const move = this.currentMoves[this.moveIndex];
-        this.executeMove(move);
-        this.moveIndex++;
+            const input = inputs[inputIndex];
+            this.executeInput(input);
+            inputIndex++;
+        }, 50); // 50ms between inputs
     }
 
-    executeMove(move) {
-        if (!move || !this.isActive) return;
+    executeInput(input) {
+        if (!input || !this.isActive) return;
 
-        // The move is a simple string representing a single action
-        switch (move.toLowerCase()) {
+        switch (input) {
             case 'left':
                 Game.movement.movePieceSide("LEFT", 1);
                 break;
@@ -319,12 +327,41 @@ export class MisaMinoBot {
             case 'hold':
                 Game.hold.swap();
                 break;
-            case 'sonicdrop':
-                // For now, sonicdrop will be treated as a harddrop.
-                // This could be improved to do a fast softdrop.
+            case 'harddrop':
                 Game.movement.harddrop();
                 break;
         }
+    }
+
+    translateMoveToInputs(targetX, targetY, targetRotation, spin) {
+        if (!Game.falling.piece) return [];
+
+        const inputs = [];
+        const currentX = Game.falling.location[0];
+        const currentRotation = Game.falling.rotation;
+
+        // Rotation
+        const rotationDiff = (targetRotation - currentRotation + 4) % 4;
+        for (let i = 0; i < rotationDiff; i++) {
+            inputs.push('cw');
+        }
+
+        // Horizontal movement
+        const horizontalDiff = targetX - currentX;
+        if (horizontalDiff > 0) {
+            for (let i = 0; i < horizontalDiff; i++) {
+                inputs.push('right');
+            }
+        } else if (horizontalDiff < 0) {
+            for (let i = 0; i < Math.abs(horizontalDiff); i++) {
+                inputs.push('left');
+            }
+        }
+
+        // Drop
+        inputs.push('harddrop');
+
+        return inputs;
     }
 
     // Called when game state changes (new piece, line clear, etc.)
@@ -345,7 +382,7 @@ export class MisaMinoBot {
     // Called when game starts
     onGameStart() {
         // No-op for single-shot mode; show/hide in-game button here
-        const btn = document.getElementById('misamino-toggle');
+        const btn = document.getElementById('misamino-ingame');
         if (btn) btn.style.display = (Game.settings.game.gamemode === 'custom') ? 'block' : 'none';
     }
 
