@@ -299,67 +299,44 @@ export class MisaMinoBot {
             let targetRotation = 0;
             switch (orientation) {
                 case 'north': targetRotation = 0; break;
-                case 'east':  targetRotation = 1; break;
+                case 'east': targetRotation = 1; break;
                 case 'south': targetRotation = 2; break;
-                case 'west':  targetRotation = 3; break;
+                case 'west': targetRotation = 3; break;
             }
 
-            // 直接定位版本：不呼叫水平/垂直/旋轉的逐步移動 API
-            this.directPlaceMovement(x, y, targetRotation, spin, type);
+            // Execute the move by simulating key presses
+            this.simulateMovement(x, y, targetRotation, spin, type);
 
         } catch (error) {
             console.error('Error executing move:', error);
         }
     }
 
-    /**
-     * 直接定位：
-     * 1) 若回傳方塊與當前不同 → 先 hold
-     * 2) 直接設定 rotation
-     * 3) 直接設定 x,y
-     * 4) 硬降（harddrop）
-     */
-    // 將 directPlaceMovement 改為支援延幀放置
-    directPlaceMovement(targetX, targetY, targetRotation, spin, targetType) {
+    simulateMovement(targetX, targetY, targetRotation, spin, targetType) {
         if (!this.isActive || !Game.falling?.piece) return;
 
-        // 1) 回傳方塊與當前不同 → 先 hold
+        // Hold if necessary
         const currentPieceName = Game.falling.piece.name?.toUpperCase?.() || null;
         const desiredType = targetType?.toUpperCase?.() || null;
         if (desiredType && currentPieceName && desiredType !== currentPieceName) {
-            if (typeof Game.movement?.hold === 'function') {
-                Game.movement.hold();
+            if (typeof Game.hold?.swapHold === 'function') {
+                Game.hold.swapHold();
             }
         }
 
-        // 2) 重新抓取 falling（hold 後會刷新）
         if (!this.isActive || !Game.falling?.piece) return;
 
-        // 3) 設定旋轉與座標（直接寫入或使用 setter）
-        // 若有官方 setter，優先使用：
-        // if (Game.falling.setRotation) Game.falling.setRotation(targetRotation);
-        // else
-        Game.falling.rotation = targetRotation;
-        // if (Game.falling.setLocation) Game.falling.setLocation(targetX, targetY);
-        // else
-        Game.falling.location = [targetX, targetY];
-
-        // 4) 嘗試同步（若有）
-        if (typeof Game.falling.update === 'function') {
-            try { Game.falling.update(); } catch (e) {}
-        }
-        if (typeof Game.board?.update === 'function') {
-            try { Game.board.update(); } catch (e) {}
+        // Rotate
+        const rotationDiff = (targetRotation - Game.falling.rotation + 4) % 4;
+        for (let i = 0; i < rotationDiff; i++) {
+            Game.movement.rotate("CW");
         }
 
-        // 5) 將硬降延後到下一或下一幀，確保上一段寫入不被同幀邏輯覆寫
-        requestAnimationFrame(() => {
-            // 再給一幀更保險（有些引擎在 rAF 之後還有一輪
-            requestAnimationFrame(() => {
-                if (!this.isActive || !Game.falling?.piece) return;
-                Game.movement.harddrop();
-            });
-        });
+        // Direct placement
+        Game.falling.location = [targetX, Game.falling.location[1]];
+
+        // Hard drop
+        Game.movement.harddrop();
     }
 
     // Called when game state changes (new piece, line clear, etc.)
