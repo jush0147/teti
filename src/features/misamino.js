@@ -373,7 +373,7 @@ export class MisaMinoBot {
         if (this.controller.right) Game.movement.movePieceSide("RIGHT", 1);
         if (this.controller.cw) Game.movement.rotate("CW");
         if (this.controller.ccw) Game.movement.rotate("CCW");
-        if (this.controller.hold) Game.hold.swap();
+        if (this.controller.hold) Game.hold.swapHold();
         if (this.controller.soft_drop) Game.movement.movePieceDown();
         if (this.controller.hard_drop) Game.movement.harddrop();
     }
