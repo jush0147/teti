@@ -341,26 +341,22 @@ export class MisaMinoBot {
         }
     }
 
+    // Main placement function: teleports the piece to the TBP-suggested position and rotation, then hard drops.
     executePiecePlacement(targetX, targetY, targetRotation, spin) {
         if (!Game.falling.piece || !this.isActive) return;
 
-        // Rotate piece to target orientation
-        const currentRotation = Game.falling.rotation;
-        const rotationDiff = (targetRotation - currentRotation + 4) % 4;
-        for (let i = 0; i < rotationDiff; i++) {
-            Game.movement.rotate("CW");
-        }
-
-        // Move piece to corrected position (already offset from TBP center)
+        // Set rotation and location properties
+        Game.falling.rotation = targetRotation;
         Game.falling.location = [targetX, targetY];
-        Game.pixi.setRotationCenterPos(Game.falling.location, Game.falling.piece.name);
 
-        // Handle spin moves (T-spins, etc.) if needed
-        if (spin && spin !== 'none') {
-            // Additional spin logic can be implemented here
-        }
+        // --- Critical: actually move the piece on the board ---
+        // Requires Board.teleportFallingPiece(piece, x, y, rotation)
+        Game.board.teleportFallingPiece(Game.falling.piece, targetX, targetY, targetRotation);
 
-        // Execute hard drop to place the piece
+        // Update visual rotation center
+        Game.pixi.setRotationCenterPos([targetX, targetY], Game.falling.piece.name);
+
+        // Hard drop
         Game.movement.harddrop();
     }
 
