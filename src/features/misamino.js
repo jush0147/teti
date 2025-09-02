@@ -192,8 +192,8 @@ export class MisaMinoBot {
                         // Garbage cell without explicit piece type; mark as garbage/occupied
                         cellValue = "G";
                     } else {
-                        // Fallback occupied cell
-                        cellValue = null;
+                        // Fallback occupied cell: mark as filled for TBP
+                        cellValue = "X";
                     }
                 }
 
@@ -339,9 +339,14 @@ export class MisaMinoBot {
             Game.movement.rotate("CW"); // Rotate clockwise
         }
 
-        // Move piece to target X position
-        Game.falling.location = [targetX, targetY];
-        Game.pixi.setRotationCenterPos(Game.falling.location, Game.falling.piece.name);
+        // Move horizontally toward target X using movement system
+        const currentX = Game.falling.location[0];
+        const dx = targetX - currentX;
+        if (dx > 0) {
+            Game.movement.movePieceSide("RIGHT", dx);
+        } else if (dx < 0) {
+            Game.movement.movePieceSide("LEFT", -dx);
+        }
 
         // Handle spin moves (T-spins, etc.)
         if (spin && spin !== 'none') {
