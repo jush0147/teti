@@ -6,55 +6,67 @@ export class Board {
      */
     boardState = [];
 
-    // modify board
+    // Check if a cell contains a specific value
     checkMino([x, y], val) {
         return this.boardState[y][x].split(" ").includes(val);
     }
 
+    // Remove all minos with a specific value from the board
     MinoToNone(val) {
         this.getMinos(val).forEach(([x, y]) => this.rmValue([x, y], val));
     }
 
+    // Remove all cells containing a specific value from the board
     EradicateMinoCells(val) {
         this.getCoords(this.boardState, c => c.includes(val), [0, 0]).forEach(([x, y]) => this.rmValue([x, y], val));
     }
 
+    // Add minos with a value at given coordinates, with offset
     addMinos(val, c, [dx, dy]) {
         c.forEach(([x, y]) => this.setValue([x + dx, y + dy], val));
     }
 
+    // Add a value to the front of a cell
     addValFront([x, y], val) {
         this.boardState[y][x] = `${val} ${this.boardState[y][x]}`;
     }
 
+    // Add a value to a cell
     addValue([x, y], val) {
         this.boardState[y][x] = (this.boardState[y][x] + " " + val).trim();
     }
 
+    // Set a cell to a specific value
     setValue([x, y], val) {
         this.boardState[y][x] = val;
     }
 
+    // Remove a value from a cell
     rmValue([x, y], val) {
         this.boardState[y][x] = this.boardState[y][x].replace(val, "").trim();
     }
 
+    // Get all board coordinates containing a specific mino name
     getMinos(name) {
         return this.getCoords(this.boardState, c => c.split(" ").includes(name), [0, 0]);
     }
 
+    // Convert a piece matrix to board coordinates, with offset
     pieceToCoords(arr, [dx, dy] = [0, 0]) {
         return this.getCoords(arr.toReversed(), c => c == 1, [dx, dy]);
     }
 
+    // Set a cell to empty
     setCoordEmpty([x, y]) {
         this.boardState[y][x] = "";
     }
 
+    // Reset board to empty state
     resetBoard() {
         this.boardState = [...Array(40)].map(() => [...Array(10)].map(() => ""));
     }
 
+    // Get all full rows (for line clear)
     getFullRows() {
         const rows = this.getMinos("S")
             .map(coord => coord[1])
@@ -65,6 +77,7 @@ export class Board {
             .toReversed();
     }
 
+    // Utility: get coordinates matching a filter in an array
     getCoords(array, filter, [dx, dy]) {
         const coords = [];
         array.forEach((row, y) =>
@@ -75,6 +88,7 @@ export class Board {
         return coords;
     }
 
+    // Move minos in a direction
     moveMinos(coords, dir, size, value = "") {
         const getChange = ([x, y], a) => {
             return { RIGHT: [x + a, y], LEFT: [x - a, y], DOWN: [x, y - a], UP: [x, y + a] };
@@ -95,9 +109,9 @@ export class Board {
         Game.mechanics.spawnOverlay();
     }
 
+    // Set up combo board (for special patterns)
     setComboBoard(start) {
         // 4w sides
-
         const board = JSON.parse(JSON.stringify(this.boardState));          
         board.forEach((row, y) => {
             row.forEach((col, x) => {
@@ -120,6 +134,21 @@ export class Board {
 
         this.addMinos("S G", garbCoords.map(([x, y]) => [x + 3, y]), [0, 0]);
         Game.mechanics.setShadow();
+    }
 
+    // --- NEW: Teleport the falling piece to (x, y) with the given rotation ---
+    // This is used by the bot to place the piece at the exact TBP-recommended spot.
+    teleportFallingPiece(piece, x, y, rotation) {
+        // Remove all currently placed minos for the falling piece (marked as "A <piece>")
+        this.MinoToNone("A " + piece.name);
+
+        // Get the piece's shape matrix for the specified rotation
+        const shape = piece[`shape${rotation}`];
+
+        // Convert the shape matrix to board coordinates (relative to origin 0,0)
+        const coords = this.pieceToCoords(shape);
+
+        // Add the piece's minos at the new position (offset by x, y)
+        this.addMinos("A " + piece.name, coords, [x, y]);
     }
 }
