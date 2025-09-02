@@ -1,5 +1,18 @@
 import { Game } from "../main.js";
 
+// SRS rotation center offsets for each piece type.
+// TBP (misamino) gives coordinates for the piece's rotation center, but TETI needs the piece's origin.
+// We subtract these offsets to convert TBP coordinates to TETI coordinates.
+const SRS_CENTER_OFFSETS = {
+    I: [1, 2],    // I-piece center is at [1,2] in SRS
+    O: [0.5, 0.5],// O-piece center is in the middle
+    T: [1, 1],
+    S: [1, 1],
+    Z: [1, 1],
+    J: [1, 1],
+    L: [1, 1]
+};
+
 export class MisaMinoBot {
     constructor() {
         this.worker = null;
@@ -308,18 +321,19 @@ export class MisaMinoBot {
             const currentPieceType = Game.falling.piece ? Game.falling.piece.name.toUpperCase() : null;
             const suggestedPieceType = type ? type.toUpperCase() : currentPieceType;
 
-            // If piece types are different, execute hold first
-            if (suggestedPieceType && currentPieceType && suggestedPieceType !== currentPieceType) {
-                // Execute hold to get the correct piece
-                Game.mechanics.switchHold();
+            // === SRS offset: convert TBP center to TETI position ===
+            const offset = SRS_CENTER_OFFSETS[suggestedPieceType] || [1, 1];
+            // Subtract the offset so the piece will be placed correctly in TETI
+            const finalX = x - offset[0];
+            const finalY = y - offset[1];
 
-                // Wait a bit for the hold to complete before proceeding
+            if (suggestedPieceType && currentPieceType && suggestedPieceType !== currentPieceType) {
+                Game.mechanics.switchHold();
                 setTimeout(() => {
-                    this.executePiecePlacement(x, y, targetRotation, spin);
+                    this.executePiecePlacement(finalX, finalY, targetRotation, spin);
                 }, 50);
             } else {
-                // Same piece type, proceed directly
-                this.executePiecePlacement(x, y, targetRotation, spin);
+                this.executePiecePlacement(finalX, finalY, targetRotation, spin);
             }
 
         } catch (error) {
@@ -330,23 +344,20 @@ export class MisaMinoBot {
     executePiecePlacement(targetX, targetY, targetRotation, spin) {
         if (!Game.falling.piece || !this.isActive) return;
 
-        // Get current piece position and rotation
+        // Rotate piece to target orientation
         const currentRotation = Game.falling.rotation;
-
-        // Rotate to target orientation
         const rotationDiff = (targetRotation - currentRotation + 4) % 4;
         for (let i = 0; i < rotationDiff; i++) {
-            Game.movement.rotate("CW"); // Rotate clockwise
+            Game.movement.rotate("CW");
         }
 
-        // Move piece to target X position
+        // Move piece to corrected position (already offset from TBP center)
         Game.falling.location = [targetX, targetY];
         Game.pixi.setRotationCenterPos(Game.falling.location, Game.falling.piece.name);
 
-        // Handle spin moves (T-spins, etc.)
+        // Handle spin moves (T-spins, etc.) if needed
         if (spin && spin !== 'none') {
-            // Additional rotation for spins might be needed
-            // This depends on the specific implementation
+            // Additional spin logic can be implemented here
         }
 
         // Execute hard drop to place the piece
