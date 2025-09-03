@@ -11,6 +11,27 @@ export class MisaMinoBot {
         this.autoPlayInterval = null;
         this.autoPlayDelay = 500; // 500ms between moves
         this.singleRun = false;
+        // This map stores the [x, y] offset from the top-left of the bounding box
+        // to the SRS rotation center for each piece and orientation.
+        // This is used to convert the bot's center-relative coordinates to the game's
+        // top-left-relative coordinates.
+        // This map stores the [x, y] offset from the top-left of the bounding box
+        // to the SRS rotation center for each piece and orientation.
+        // This is used to convert the bot's center-relative coordinates to the game's
+        // top-left-relative coordinates.
+        // This map stores the [x, y] offset from the top-left of the bounding box
+        // to the SRS rotation center for each piece and orientation.
+        // This is used to convert the bot's center-relative coordinates to the game's
+        // top-left-relative coordinates.
+        this.srsOffsets = {
+            'I': { 'north': [1, 1], 'east': [2, 1], 'south': [2, 2], 'west': [1, 2] },
+            'O': { 'north': [0, 1], 'east': [0, 0], 'south': [1, 0], 'west': [1, 1] },
+            'T': { 'north': [1, 1], 'east': [1, 1], 'south': [1, 1], 'west': [1, 1] },
+            'L': { 'north': [1, 1], 'east': [1, 1], 'south': [1, 1], 'west': [1, 1] },
+            'J': { 'north': [1, 1], 'east': [1, 1], 'south': [1, 1], 'west': [1, 1] },
+            'S': { 'north': [1, 1], 'east': [1, 1], 'south': [1, 1], 'west': [1, 1] },
+            'Z': { 'north': [1, 1], 'east': [1, 1], 'south': [1, 1], 'west': [1, 1] },
+        };
     }
 
     async init() {
@@ -327,29 +348,30 @@ export class MisaMinoBot {
         }
     }
 
-    executePiecePlacement(targetX, targetY, targetRotation, spin) {
+    executePiecePlacement(botTargetX, botTargetY, targetRotation, spin) {
         if (!Game.falling.piece || !this.isActive) return;
 
-        // Get current piece position and rotation
+        // 1. Rotate the piece to the target orientation.
         const currentRotation = Game.falling.rotation;
-
-        // Rotate to target orientation
         const rotationDiff = (targetRotation - currentRotation + 4) % 4;
         for (let i = 0; i < rotationDiff; i++) {
-            Game.movement.rotate("CW"); // Rotate clockwise
+            Game.movement.rotate("CW");
         }
 
-        // Move piece to target X position
-        Game.falling.location = [targetX, targetY];
-        Game.pixi.setRotationCenterPos(Game.falling.location, Game.falling.piece.name);
+        // After rotation, get the piece's current state.
+        const pieceType = Game.falling.piece.name.toUpperCase();
+        const orientationName = ['north', 'east', 'south', 'west'][Game.falling.rotation];
 
-        // Handle spin moves (T-spins, etc.)
-        if (spin && spin !== 'none') {
-            // Additional rotation for spins might be needed
-            // This depends on the specific implementation
-        }
+        // 2. Convert the bot's center-relative coordinates to the game's top-left-relative coordinates.
+        const offset = this.srsOffsets[pieceType]?.[orientationName] ?? [0, 0];
+        const gameTargetX = botTargetX - offset[0];
+        const gameTargetY = botTargetY - offset[1];
 
-        // Execute hard drop to place the piece
+        // 3. Set the piece's location directly.
+        // This is the method the user requested to be maintained.
+        Game.falling.location = [gameTargetX, gameTargetY];
+
+        // 4. Hard drop the piece to lock it in place.
         Game.movement.harddrop();
     }
 
