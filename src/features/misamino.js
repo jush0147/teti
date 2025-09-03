@@ -24,7 +24,7 @@ export class MisaMinoBot {
         // This is used to convert the bot's center-relative coordinates to the game's
         // top-left-relative coordinates.
         this.srsOffsets = {
-            'I': { 'north': [1, 1], 'east': [2, 0], 'south': [2, 1], 'west': [1, 2] },
+            'I': { 'north': [1, 1], 'east': [2, 0], 'south': [2, 1], 'west': [1, 1] },
             'O': { 'north': [0, 0], 'east': [0, -1], 'south': [1, -1], 'west': [1, 0] },
             'T': { 'north': [1, 1], 'east': [1, 1], 'south': [1, 1], 'west': [1, 1] },
             'L': { 'north': [1, 1], 'east': [1, 1], 'south': [1, 1], 'west': [1, 1] },
