@@ -367,11 +367,20 @@ export class MisaMinoBot {
         const gameTargetX = botTargetX - offset[0];
         const gameTargetY = botTargetY - offset[1];
 
-        // 3. Set the piece's location directly.
-        // This is the method the user requested to be maintained.
+        // 3. Clear the old active piece from the board grid.
+        Game.board.MinoToNone("A");
+
+        // 4. Get the coordinates for the new rotated shape.
+        const newShape = Game.falling.piece[`shape${Game.falling.rotation}`];
+        const newCoords = Game.board.pieceToCoords(newShape);
+
+        // 5. Add the piece's minos back to the board grid at the new target location.
+        Game.board.addMinos("A " + Game.falling.piece.name, newCoords, [gameTargetX, gameTargetY]);
+
+        // 6. Update the falling piece's official location property.
         Game.falling.location = [gameTargetX, gameTargetY];
 
-        // 4. Hard drop the piece to lock it in place.
+        // 7. Hard drop the piece to lock it in place.
         Game.movement.harddrop();
     }
 
