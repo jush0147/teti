@@ -32,6 +32,10 @@ export class Board {
     }
 
     setValue([x, y], val) {
+        if (y < 0 || y >= 40 || x < 0 || x >= 10) {
+            console.error(`Attempted to set a value at an invalid coordinate: [${x}, ${y}]. Request ignored.`);
+            return;
+        }
         this.boardState[y][x] = val;
     }
 
