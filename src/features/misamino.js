@@ -25,7 +25,7 @@ export class MisaMinoBot {
         // top-left-relative coordinates.
         this.srsOffsets = {
             'I': { 'north': [1, 1], 'east': [2, 1], 'south': [2, 2], 'west': [1, 2] },
-            'O': { 'north': [0, 1], 'east': [0, 0], 'south': [1, 0], 'west': [1, 1] },
+            'O': { 'north': [0, 2], 'east': [0, 1], 'south': [1, 1], 'west': [1, 2] },
             'T': { 'north': [1, 1], 'east': [1, 1], 'south': [1, 1], 'west': [1, 1] },
             'L': { 'north': [1, 1], 'east': [1, 1], 'south': [1, 1], 'west': [1, 1] },
             'J': { 'north': [1, 1], 'east': [1, 1], 'south': [1, 1], 'west': [1, 1] },
