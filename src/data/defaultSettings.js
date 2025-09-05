@@ -31,7 +31,7 @@ export const DEFAULT_SETTINGS = {
         "allowHold": true,
         "infiniteHold": true,
         "clearDelay": 0,
-        "gamemode": "sprint",
+        "gamemode": "custom",
         "allspin": true,
         "allspinminis": true,
         "allowQueueModify": true,
