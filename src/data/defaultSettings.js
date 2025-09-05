@@ -40,7 +40,7 @@ export const DEFAULT_SETTINGS = {
         "sidebar": ["time", "apm", "pps"],
         "stride": false,
         "randomiser": "7-bag",
-        "kicktable": "SRS+",
+        "kicktable": "SRS",
         "requiredLines": 40,
         "timeLimit": 120,
         "requiredAttack": 40,
