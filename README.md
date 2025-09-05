@@ -1,80 +1,43 @@
-# Teti README
+# Bot-Stacking-Helper for teti
 
-Hosted on github pages [here](https://titanplayz100.github.io/teti/)
+## Introduction  
 
-The info page can be found [here](https://titanplayz100.github.io/teti/info.html)
+This project provides a real-time stacking assistant for the `teti` Tetris platform. By integrating the powerful `MisaMinoTBP` bot, it helps players practice and understand stacking strategies in Zen/Custom modes.  
 
-> [!NOTE]
-> If you have issues a common way to fix it is to use f5 to reset cache
+## Notes  
 
-FIREFOX is compatible!!!!
+- **Experimental**: This is a proof-of-concept project, mainly to showcase the idea. It is unlikely to be actively maintained or bug-fixed.  
+- **AI-assisted development**: Most of the code was generated with the help of AI tools:  
+  - Jules (Gemini 2.5 Pro)  
+  - Cursor (Claude Opus 4.1)  
 
-## New Feature: MisaMino AI Bot Integration
+## Known Issues  
 
-TETI now includes an integrated MisaMino AI bot that can automatically play in Zen/Custom mode! 
+- Works only with **SRS (Super Rotation System)**.  
+- Potential coordinate conversion issues, especially with the **I piece**.  
+- T-Spins suggested by the bot may not be recognized by `teti`’s scoring system.  
 
-- **Toggle the bot** using the "BOT" button in the settings panel (only visible in Zen/Custom mode)
-- **AI-powered gameplay** with real-time board analysis and optimal move execution
-- **Seamless switching** between manual and automatic play
-- See `MISAMINO_INTEGRATION.md` for detailed information
+## Demo  
 
-## Desktop App
-Releases are now run through a workflow. They are **up to date** and contain all the latest features.
+- [Demo Video](https://youtu.be/CjdberDtXBo?si=1OU6k85BlkSsIhnv)  
+- [Try it Live](https://jush0147.github.io/Bot-Stacking-Helper-for-teti/)  
 
-App build using Tauri, feel free to open issues and PRs.
+## How it Works  
 
-## Contributing
-Feel free to add and modify any code, as long as its for improvements or optimisations. (I'm pretty lenient)
+1. The board state is captured and converted into TBP format.  
+2. The data is sent to the `MisaMinoTBP` bot, which calculates the optimal placement.  
+3. The bot’s TBP coordinates are converted back into `teti` coordinates.  
+4. The current piece is automatically moved and placed at the suggested position.  
 
-Just make sure ur accounting for breaking changes, and have clear PRs with good descriptions.
+## Acknowledgements  
 
-If you need help with understanding code feel free to open an issue.
+This project builds on the great work of:  
 
+- [teti](https://github.com/TitanPlayz100/teti)  
+- [MisaMinoTBP](https://github.com/jezevec10/MisaMinoTBP)  
+- [tbp-spec](https://github.com/tetris-bot-protocol/tbp-spec)  
+- [Tetris Wiki (SRS)](https://tetris.fandom.com/wiki/Super_Rotation_System)  
 
-## Data Formats (for my convenience)
-### Gamemode Structure (gamemodes.json)
-```js
-gamemodes = {
-    "gamemode_name": {
-        settings: {}, // settings that override the default * settings
-        displayName: "", // name shown on gamemode selection
-        objectiveText: "", // subtext displayed on right side
-        goalStat: "", // stat being tracked (valid property in stats class)
-        target: "", // target (valid target in settings)
-        result: "", // displayed as result (another valid stat in stats class)
-        
-        // TO BE ADDED LATER
-        music: "", // custom song that can play 
-        compmusic: "", // custom song that played on pb pace
-        startBoard: "", // starting board, tetrio map format
-        effects: [], // custom background / effects
-    }
-}
-```
+## License  
 
-Add functionality mainly in `features/modes.js`.
-You can modify existing modules as well from other files
-
-### Adding Audio (sfxlist.json)
-```json
-{
-    {
-        "name": "<name used in code>",
-        "path": "assets/sfx/<file path / name>.<ext>"
-    }
-}
-```
-Use with `Game.sounds.playSound(<name>)`
-
-
-## Types for PIXIjs
-Workaround to use types when using pixijs imported through script tag:
-- download [pixi.js.d.ts](https://github.com/pixijs/pixijs/releases) from pixijs repo and place file in /src
-- setup jsconfig.json to automatically detect pixi.js.d.ts for types
-
-```json 
-{
-    "compilerOptions": { "resolveJsonModule": true },
-    "typeAcquisition": { "include": ["pixi.js.d.ts"] }
-}
-```
+This project is licensed under the MIT License. See the `LICENSE` file for details.
