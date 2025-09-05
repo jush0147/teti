@@ -130,5 +130,5 @@ Potential improvements for future versions:
 ## Credits
 
 - MisaMino bot by misakamm
-- MisaMinoTBP (WebAssembly port) by jush0147
-- Integration developed for TETI by the community
+- MisaMinoTBP (WebAssembly port) by jezevec10
+- Integration developed for TETI by TitanPlayz100 and the contributors 
