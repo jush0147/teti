@@ -27,7 +27,8 @@
         <progress id="lockTimer" max="100" value="50"></progress>
         <progress id="lockCounter" max="100" value="50"></progress>
         <progress id="climbSpeedBar" max="100" value="0"></progress>
-        <button id="misamino-ingame" class="ingameBotButton" onclick="Game.misamino.runOnce()" title="Run MisaMino once (Custom mode)">BOT</button>
+        <button id="misamino-ingame" class="ingameBotButton" onclick="Game.misamino.runOnce()" title="Run MisaMino once (Custom mode)">Misa</button>
+        <button id="coldclear-ingame" class="ingameBotButton" onclick="Game.coldclear.runOnce()" title="Run Cold Clear once (Custom mode)">CC</button>
     </div>
 
     <!-- INFO OVERLAYS -->
@@ -75,8 +76,11 @@
                  <img src="./assets/icons/history.svg" style="transform: translateY(10%); height: 100%;">
              </button>
              <button id="misamino-toggle" class="settingPanelButton smallPanelButton" onclick="Game.misamino.toggle()" title="Toggle MisaMino AI Bot (Zen/Custom mode only)">
-                 <span style="font-size: 0.8em; font-weight: bold; color: #fff;">BOT</span>
+                 <span style="font-size: 0.8em; font-weight: bold; color: #fff;">Misa</span>
              </button>
+             <button id="coldclear-toggle" class="settingPanelButton smallPanelButton" onclick="Game.coldclear.toggle()" title="Toggle Cold Clear AI Bot (Zen/Custom mode only)">
+                <span style="font-size: 0.8em; font-weight: bold; color: #fff;">CC</span>
+            </button>
         </div>
         <div class="fullWidth"></div>
 

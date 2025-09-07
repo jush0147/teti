@@ -1,6 +1,6 @@
 import { Game } from "../main.js";
 
-export class MisaMinoBot {
+export class ColdClearBot {
     constructor() {
         this.worker = null;
         this.isActive = false;
@@ -11,14 +11,6 @@ export class MisaMinoBot {
         this.autoPlayInterval = null;
         this.autoPlayDelay = 500; // 500ms between moves
         this.singleRun = false;
-        // This map stores the [x, y] offset from the top-left of the bounding box
-        // to the SRS rotation center for each piece and orientation.
-        // This is used to convert the bot's center-relative coordinates to the game's
-        // top-left-relative coordinates.
-        // This map stores the [x, y] offset from the top-left of the bounding box
-        // to the SRS rotation center for each piece and orientation.
-        // This is used to convert the bot's center-relative coordinates to the game's
-        // top-left-relative coordinates.
         // This map stores the [x, y] offset from the top-left of the bounding box
         // to the SRS rotation center for each piece and orientation.
         // This is used to convert the bot's center-relative coordinates to the game's
@@ -38,38 +30,46 @@ export class MisaMinoBot {
         if (this.isInitialized) return;
 
         try {
-            // Use relative path that works both locally and on GitHub Pages
-            const workerPath = new URL('./assets/misamino/misaImport.js', window.location.origin + window.location.pathname.replace(/[^/]*$/, ''));
-            this.worker = new Worker(workerPath);
+            // Use a module worker for Cold Clear
+            const workerPath = new URL('./assets/coldclear/coldclear-worker.js', window.location.origin + window.location.pathname.replace(/[^/]*$/, ''));
+            this.worker = new Worker(workerPath, { type: 'module' });
             this.worker.onmessage = (e) => this.handleWorkerMessage(e);
             this.worker.onerror = (error) => {
-                console.error('MisaMino Worker Error:', error);
-                Game.modals.generate.notif("MisaMino Error", "Failed to initialize bot", "error");
+                console.error('Cold Clear Worker Error:', error);
+                Game.modals.generate.notif("Cold Clear Error", "Failed to initialize bot", "error");
             };
-
-            this.isInitialized = true;
-            console.log('MisaMino bot initialized successfully');
+            // Note: isInitialized will be set to true after the worker sends the 'ready' message.
         } catch (error) {
-            console.error('Failed to initialize MisaMino bot:', error);
-            Game.modals.generate.notif("MisaMino Error", "Failed to load bot files", "error");
+            console.error('Failed to initialize Cold Clear bot:', error);
+            Game.modals.generate.notif("Cold Clear Error", "Failed to load bot files", "error");
         }
     }
 
     handleWorkerMessage(e) {
         const data = e.data;
-        // Debug log to verify message shape
-        console.debug('MisaMino worker message:', data);
+        console.debug('Cold Clear worker message:', data);
 
-        // Accept both explicit 'suggestion' and any payload with moves array
-        if (this.isActive && (data.type === 'suggestion' || Array.isArray(data.moves))) {
-            this.currentMoves = data.moves || [];
+        if (data.type === 'ready') {
+            this.isInitialized = true;
+            console.log('Cold Clear bot initialized successfully');
+            return;
+        }
+
+        if (data.type === 'error') {
+            Game.modals.generate.notif("Cold Clear Error", data.message || "An unknown error occurred in the bot.", "error");
+            return;
+        }
+
+        // The TBP protocol wraps the suggestion in a `suggestion` property.
+        if (this.isActive && (data.type === 'suggestion' || (data.suggestion && Array.isArray(data.suggestion.moves)))) {
+            this.currentMoves = data.suggestion ? data.suggestion.moves : (data.moves || []);
             this.moveIndex = 0;
             this.pendingSuggestion = false;
 
             if (this.currentMoves.length > 0) {
                 this.executeMoves();
             } else if (this.singleRun) {
-                Game.modals.generate.notif("MisaMino", "No moves returned", "error");
+                Game.modals.generate.notif("Cold Clear", "No moves returned", "error");
                 this.singleRun = false;
                 this.isActive = false;
                 this.stopBot();
@@ -79,13 +79,13 @@ export class MisaMinoBot {
 
     toggle() {
         if (!this.isInitialized) {
-            Game.modals.generate.notif("MisaMino", "Bot not initialized", "error");
+            Game.modals.generate.notif("Cold Clear", "Bot not initialized", "error");
             return;
         }
 
         // Check if we're in zen/custom mode
         if (Game.settings.game.gamemode !== 'custom') {
-            Game.modals.generate.notif("MisaMino", "Bot only works in Zen/Custom mode", "error");
+            Game.modals.generate.notif("Cold Clear", "Bot only works in Zen/Custom mode", "error");
             return;
         }
 
@@ -98,7 +98,7 @@ export class MisaMinoBot {
         }
 
         // Update UI toggle state
-        const toggleButton = document.getElementById('misamino-toggle');
+        const toggleButton = document.getElementById('coldclear-toggle');
         if (toggleButton) {
             const buttonText = toggleButton.querySelector('span');
             if (buttonText) {
@@ -107,17 +107,16 @@ export class MisaMinoBot {
             toggleButton.classList.toggle('active', this.isActive);
         }
 
-        Game.modals.generate.notif("MisaMino", this.isActive ? "Bot enabled" : "Bot disabled", "info");
+        Game.modals.generate.notif("Cold Clear", this.isActive ? "Bot enabled" : "Bot disabled", "info");
     }
 
-    // Run bot once: request a single suggestion and execute it, do not loop
     runOnce() {
         if (!this.isInitialized) {
-            Game.modals.generate.notif("MisaMino", "Bot not initialized", "error");
+            Game.modals.generate.notif("Cold Clear", "Bot not initialized", "error");
             return;
         }
         if (Game.settings.game.gamemode !== 'custom') {
-            Game.modals.generate.notif("MisaMino", "Custom mode only", "error");
+            Game.modals.generate.notif("Cold Clear", "Custom mode only", "error");
             return;
         }
         if (Game.ended) return;
@@ -127,11 +126,10 @@ export class MisaMinoBot {
         this.currentMoves = [];
         this.moveIndex = 0;
         this.pendingSuggestion = false;
-        this.sendGameState();
         this.requestSuggestion();
 
         // Flash button feedback
-        const btn = document.getElementById('misamino-ingame');
+        const btn = document.getElementById('coldclear-ingame');
         if (btn) {
             btn.style.filter = 'brightness(1.2)';
             setTimeout(() => btn.style.filter = '', 150);
@@ -140,9 +138,6 @@ export class MisaMinoBot {
 
     startBot() {
         if (!this.worker || Game.ended) return;
-
-        // Send initial game state
-        this.sendGameState();
         this.requestSuggestion();
     }
 
@@ -157,19 +152,22 @@ export class MisaMinoBot {
         this.pendingSuggestion = false;
 
         if (this.worker) {
+            // TBP stop message
             this.worker.postMessage({ type: "stop" });
         }
     }
 
-    sendGameState() {
-        if (!this.worker || !this.isActive) return;
+    requestSuggestion() {
+        if (!this.worker || !this.isActive || this.pendingSuggestion) return;
+
+        this.pendingSuggestion = true;
 
         const board = this.convertBoardToTBPFormat();
         const queue = this.getQueueArray();
         const hold = this.getHoldPiece();
 
         const gameState = {
-            type: "start",
+            type: "suggest",
             hold: hold,
             queue: queue,
             combo: Game.stats.combo >= 0 ? Game.stats.combo : 0,
@@ -178,13 +176,6 @@ export class MisaMinoBot {
         };
 
         this.worker.postMessage(gameState);
-    }
-
-    requestSuggestion() {
-        if (!this.worker || !this.isActive || this.pendingSuggestion) return;
-
-        this.pendingSuggestion = true;
-        this.worker.postMessage({ type: "suggest" });
     }
 
     convertBoardToTBPFormat() {
@@ -388,7 +379,6 @@ export class MisaMinoBot {
     onGameStateChange() {
         if (this.isActive && !this.pendingSuggestion && this.autoPlayInterval === null) {
             setTimeout(() => {
-                this.sendGameState();
                 this.requestSuggestion();
             }, 200);
         }
@@ -402,7 +392,7 @@ export class MisaMinoBot {
     // Called when game starts
     onGameStart() {
         // No-op for single-shot mode; show/hide in-game button here
-        const btn = document.getElementById('misamino-ingame');
+        const btn = document.getElementById('coldclear-ingame');
         if (btn) btn.style.display = (Game.settings.game.gamemode === 'custom') ? 'block' : 'none';
     }
 

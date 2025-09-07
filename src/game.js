@@ -23,6 +23,7 @@ import { Animations } from "./display/animations.js";
 import { Replay } from "./features/replays.js";
 import { Garbage } from "./mechanics/garbage.js";
 import { MisaMinoBot } from "./features/misamino.js";
+import { ColdClearBot } from "./features/coldclear.js";
 
 export class GameClass {
     started;
@@ -64,6 +65,7 @@ export class GameClass {
         this.animations = new Animations();
         this.replay = new Replay();
         this.misamino = new MisaMinoBot();
+        this.coldclear = new ColdClearBot();
 
         this.menuactions.loadSettings();
         this.board.resetBoard();
@@ -73,6 +75,7 @@ export class GameClass {
         this.renderer.setEditPieceColours();
         this.sounds.initSounds();
         await this.misamino.init();
+        await this.coldclear.init();
         this.startGame();
         this.loadStateFromString(new URLSearchParams(window.location.search).get("map"));
         this.menuactions.addRangeListener();
@@ -94,6 +97,7 @@ export class GameClass {
         this.history.save();
         this.replay.start();
         this.misamino.onGameStart();
+        this.coldclear.onGameStart();
     }
 
     stopGameTimers() { //stop all the game's timers
@@ -139,6 +143,7 @@ export class GameClass {
         this.elementResult.textContent = bottom;
         this.profilestats.saveSession();
         this.misamino.onGameEnd();
+        this.coldclear.onGameEnd();
     }
 
     loadStateFromString(input) {
