@@ -199,3 +199,5 @@ export class GameClass {
         window.localStorage.setItem('version', this.version);
     }
 }
+
+// Trigger Vercel deployment
