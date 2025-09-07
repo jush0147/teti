@@ -1,5 +1,3 @@
-import * as __wbg_star0 from 'env';
-
 let wasm;
 
 let cachedUint8ArrayMemory0 = null;
@@ -520,7 +518,7 @@ function __wbg_get_imports() {
     imports.wbg.__wbindgen_throw = function(arg0, arg1) {
         throw new Error(getStringFromWasm0(arg0, arg1));
     };
-    imports['env'] = __wbg_star0;
+    imports['env'] = {};
 
     return imports;
 }
